@@ -1,8 +1,7 @@
 import smtplib
 from bson import ObjectId
 from fastapi.responses import JSONResponse
-from fastapi import Request
-from fastapi import FastAPI, HTTPException
+from fastapi import Request, FastAPI, HTTPException
 from pydantic import BaseModel, EmailStr
 from motor.motor_asyncio import AsyncIOMotorClient
 from passlib.context import CryptContext
@@ -32,7 +31,7 @@ try:
     client = AsyncIOMotorClient("mongodb://localhost:27017")
     db = client.studentERP
     admins_collection = db.admins  
-    students_collection = db.students  
+    students_collection = db.admin_students  # Collection for admin-side student records
     logging.info("✅ MongoDB connected successfully!")
 except Exception as e:
     logging.error(f"❌ MongoDB connection failed: {e}")
@@ -55,15 +54,11 @@ class StudentAdmission(BaseModel):
     name: str
     email: EmailStr
     total_fees: float
+    password: str  # New field for student password
 
 class FeePayment(BaseModel):
     student_id: str
     amount_paid: float
-
-# Define a model for student data
-class StudentUpdate(BaseModel):
-    name: Optional[str] = None
-    phone: Optional[str] = None
 
 # ✅ Function: Generate Student ID
 def generate_student_id():
@@ -110,13 +105,16 @@ async def admit_student(student: StudentAdmission):
 
     student_id = generate_student_id()
 
+    hashed_password = pwd_context.hash(student.password)
+
     student_entry = {
         "student_id": student_id,
         "name": student.name,
         "email": student.email,
         "total_fees": student.total_fees,
         "paid_fees": 0,
-        "remaining_fees": student.total_fees
+        "remaining_fees": student.total_fees,
+        "password": hashed_password  # Store hashed password
     }
 
     await students_collection.insert_one(student_entry)
@@ -126,6 +124,15 @@ async def admit_student(student: StudentAdmission):
         "message": "Student admitted successfully",
         "student_id": student_id
     }
+
+# ✅ STUDENT: Get Admitted Student Details (For Student Login Verification)
+@app.get("/get_admitted_student/{email}")
+async def get_admitted_student(email: str):
+    student = await students_collection.find_one({"email": email}, {"_id": 0})
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    
+    return student
 
 # ✅ STUDENT: Get Fees Details
 @app.get("/student/get-fees/{student_id}")
@@ -165,20 +172,6 @@ async def pay_fees(payment: FeePayment):
         "paid_fees": new_paid_fees,
         "remaining_fees": remaining_fees
     }
-
-# API to update student details
-@app.post("/update-student/{student_id}")
-async def update_student(student_id: str, student: dict):
-    query = {"student_id": student_id}  # Search by `student_id`
-    
-    print("Querying MongoDB with:", query)  # Debugging log
-    
-    result = await students_collection.update_one(query, {"$set": student})
-
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Student not found")
-
-    return {"message": "Student details updated successfully"}
 
 # ✅ TEST ROUTE
 @app.get("/test")
