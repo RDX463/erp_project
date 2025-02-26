@@ -1,0 +1,20 @@
+erp/
+│── lib/                              # Main directory for backend & modules             
+│   ├── student/                         # Student module (Flutter frontend)
+│   │   │   ├── student_dashboard.dart    # Student dashboard
+│   │   │   ├── profile_page.dart         # Student profile page
+│   │   │   ├── student_model.dart        # Student data model
+│   │   │   ├── api_service.dart          # Fetch student details
+│   │   │   ├── main.py                   # Fetch student details
+│   ├── faculty/                          # Faculty module (Flutter frontend)
+│   │   │   ├── faculty_login.dart    # Faculty dashboard
+│   │   │   ├── faculty_signup.dart        # Faculty data model
+│   ├── admin/                            # Admin module (Flutter frontend)
+│   │   │   ├── admin_dashboard.dart      # Admin dashboard
+│   │   │   ├── admin_signup.dart         # Manage students
+│   │   │   ├── admin_login.dart          # Admin data model
+│   │   │   ├── main.py                   # Fetch student details
+│   │   │   ├── api_service.dart          # Fetch admin details
+│   ├── main.dart                         # Entry point for Flutter
+│── README.md                             # Project Documentation
+
