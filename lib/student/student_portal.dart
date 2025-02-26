@@ -4,12 +4,16 @@ import 'student_profile.dart';
 import 'fees_page.dart';
 
 class StudentPortalPage extends StatefulWidget {
+  final String email; // Accept email as a parameter
+
+  const StudentPortalPage({Key? key, required this.email}) : super(key: key);
+
   @override
   _StudentPortalPageState createState() => _StudentPortalPageState();
 }
 
 class _StudentPortalPageState extends State<StudentPortalPage> {
-  String studentName = "Loading...";
+  String studentName = "Unknown"; // Default values
   String studentEmail = "";
 
   @override
@@ -25,8 +29,8 @@ class _StudentPortalPageState extends State<StudentPortalPage> {
     String? email = prefs.getString("student_email");
 
     setState(() {
-      studentName = name ?? "Unknown";  // Default to "Unknown" if name is not found
-      studentEmail = email ?? "";  // Default to empty string if email is not found
+      studentName = name ?? "Unknown";
+      studentEmail = email ?? "";
     });
   }
 

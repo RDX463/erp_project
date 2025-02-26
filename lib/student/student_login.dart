@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'student_portal.dart'; // Import student portal page
 
 class StudentLoginPage extends StatefulWidget {
   @override
@@ -12,7 +13,7 @@ class _StudentLoginPageState extends State<StudentLoginPage> {
   TextEditingController emailController = TextEditingController();
   bool _isLoading = false;
 
-  // Method to handle the student login
+  // Method to handle student login
   Future<void> _login() async {
     String name = nameController.text.trim();
     String email = emailController.text.trim();
@@ -27,23 +28,24 @@ class _StudentLoginPageState extends State<StudentLoginPage> {
     });
 
     try {
-      // API request to check if the student exists in the database
       final response = await http.post(
-        Uri.parse('http://localhost:8000/student/login'), // Make sure your API is correct
+        Uri.parse('http://localhost:8000/student/login'), // Ensure API URL is correct
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'name': name, 'email': email}),
       );
 
+      final responseData = json.decode(response.body);
+
       if (response.statusCode == 200) {
-        // Student is logged in
-        // Navigate to student portal or homepage
+        // ✅ Successful login → Navigate to Student Portal
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => StudentPortalPage()),
+          MaterialPageRoute(
+            builder: (context) => StudentPortalPage(email: email), // Pass email to portal
+          ),
         );
       } else {
-        // Show error if student not found
-        _showErrorDialog("Student not found or incorrect details.");
+        _showErrorDialog(responseData["detail"] ?? "Invalid login details.");
       }
     } catch (e) {
       _showErrorDialog("An error occurred. Please try again later.");
@@ -111,7 +113,7 @@ class _StudentLoginPageState extends State<StudentLoginPage> {
                     onPressed: _login,
                     style: ElevatedButton.styleFrom(
                       padding: EdgeInsets.symmetric(vertical: 16, horizontal: 50),
-                      backgroundColor: Colors.deepPurple, 
+                      backgroundColor: Colors.deepPurple,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -124,16 +126,6 @@ class _StudentLoginPageState extends State<StudentLoginPage> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class StudentPortalPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Student Portal")),
-      body: Center(child: Text("Welcome to the Student Portal!")),
     );
   }
 }
