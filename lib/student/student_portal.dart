@@ -4,16 +4,17 @@ import 'student_profile.dart';
 import 'fees_page.dart';
 
 class StudentPortalPage extends StatefulWidget {
-  final String email; // Accept email as a parameter
+  final String email;
+  final String studentName;
 
-  const StudentPortalPage({Key? key, required this.email}) : super(key: key);
+  const StudentPortalPage({Key? key, required this.email, required this.studentName}) : super(key: key);
 
   @override
   _StudentPortalPageState createState() => _StudentPortalPageState();
 }
 
 class _StudentPortalPageState extends State<StudentPortalPage> {
-  String studentName = "Unknown"; // Default values
+  String studentName = "Unknown";
   String studentEmail = "";
 
   @override
@@ -29,29 +30,23 @@ class _StudentPortalPageState extends State<StudentPortalPage> {
     String? email = prefs.getString("student_email");
 
     setState(() {
-      studentName = name ?? "Unknown";
-      studentEmail = email ?? "";
+      studentName = name ?? widget.studentName;
+      studentEmail = email ?? widget.email;
     });
   }
 
-  // Navigate to Profile Page (Pass Retrieved Email)
-  void navigateToProfile(BuildContext context) {
-    if (studentEmail.isNotEmpty) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => StudentProfilePage(email: studentEmail),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Error: Email not found! Please log in again.")),
-      );
-    }
+  // Navigate to Profile Page
+  void navigateToProfile() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => StudentProfilePage(email: studentEmail, studentName: studentName),
+      ),
+    );
   }
 
   // Navigate to Fees Page
-  void navigateToFees(BuildContext context) {
+  void navigateToFees() {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => FeesPaymentPage()),
@@ -67,7 +62,7 @@ class _StudentPortalPageState extends State<StudentPortalPage> {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text(
-              "Welcome, $studentName", // Show Student Name
+              "Welcome, $studentName!",
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
@@ -78,12 +73,12 @@ class _StudentPortalPageState extends State<StudentPortalPage> {
               crossAxisSpacing: 16.0,
               mainAxisSpacing: 16.0,
               children: [
-                _buildPortalCard(context, "Profile", Icons.person, () => navigateToProfile(context)),
-                _buildPortalCard(context, "Fees", Icons.attach_money, () => navigateToFees(context)),
-                _buildPortalCard(context, "Attendance", Icons.event_available, () {}),
-                _buildPortalCard(context, "Notices & Events", Icons.notifications, () {}),
-                _buildPortalCard(context, "Documents", Icons.folder, () {}),
-                _buildPortalCard(context, "Timetable", Icons.schedule, () {}),
+                _buildPortalCard("Profile", Icons.person, navigateToProfile),
+                _buildPortalCard("Fees", Icons.attach_money, navigateToFees),
+                _buildPortalCard("Attendance", Icons.event_available, () {}),
+                _buildPortalCard("Notices & Events", Icons.notifications, () {}),
+                _buildPortalCard("Documents", Icons.folder, () {}),
+                _buildPortalCard("Timetable", Icons.schedule, () {}),
               ],
             ),
           ),
@@ -92,7 +87,8 @@ class _StudentPortalPageState extends State<StudentPortalPage> {
     );
   }
 
-  Widget _buildPortalCard(BuildContext context, String title, IconData icon, VoidCallback onTap) {
+  // Helper method to build portal cards
+  Widget _buildPortalCard(String title, IconData icon, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Card(
@@ -101,7 +97,7 @@ class _StudentPortalPageState extends State<StudentPortalPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 50, color: Colors.blue),
+            Icon(icon, size: 50, color: Colors.deepPurple),
             const SizedBox(height: 10),
             Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],

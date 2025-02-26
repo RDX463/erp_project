@@ -8,8 +8,9 @@ import 'package:path_provider/path_provider.dart';
 
 class StudentProfilePage extends StatefulWidget {
   final String email;
+  final String studentName; // Fetch student name from login
 
-  StudentProfilePage({required this.email});
+  const StudentProfilePage({Key? key, required this.email, required this.studentName}) : super(key: key);
 
   @override
   _StudentProfilePageState createState() => _StudentProfilePageState();
@@ -19,22 +20,23 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   File? _image;
   final picker = ImagePicker();
 
-  TextEditingController fullNameController = TextEditingController();
-  TextEditingController emailController = TextEditingController();
-  TextEditingController addressController = TextEditingController();
-  TextEditingController ageController = TextEditingController();
-  TextEditingController phoneController = TextEditingController();
-  TextEditingController fatherNameController = TextEditingController();
-  TextEditingController motherNameController = TextEditingController();
+  final TextEditingController fullNameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController addressController = TextEditingController();
+  final TextEditingController ageController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController fatherNameController = TextEditingController();
+  final TextEditingController motherNameController = TextEditingController();
+
   String selectedGender = "Male";
   String selectedBranch = "Computer";
   String selectedSemester = "4th Semester";
   DateTime? selectedDOB;
   int year = 1;
 
-  List<String> genders = ["Male", "Female"];
-  List<String> branches = ["Computer", "AIDS", "ENTC", "Civil", "Mechanical"];
-  List<String> semesters = [
+  final List<String> genders = ["Male", "Female"];
+  final List<String> branches = ["Computer", "AIDS", "ENTC", "Civil", "Mechanical"];
+  final List<String> semesters = [
     "1st Semester", "2nd Semester", "3rd Semester", "4th Semester",
     "5th Semester", "6th Semester", "7th Semester", "8th Semester"
   ];
@@ -45,6 +47,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     _loadProfile();
   }
 
+  // Pick image from gallery
   Future<void> _pickImage() async {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
@@ -54,6 +57,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     }
   }
 
+  // Select Date of Birth
   Future<void> _selectDOB(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -69,6 +73,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     }
   }
 
+  // Load student profile from backend
   Future<void> _loadProfile() async {
     final url = Uri.parse("http://localhost:8000/get_student_profile?email=${Uri.encodeComponent(widget.email)}");
     final response = await http.get(url);
@@ -76,10 +81,8 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       setState(() {
-        // Fetch email from the student collection (non-editable)
         emailController.text = data['email'] ?? widget.email;
-
-        fullNameController.text = data['full_name'] ?? "";
+        fullNameController.text = data['full_name'] ?? widget.studentName;
         addressController.text = data['address'] ?? "";
         phoneController.text = data['phone'] ?? "";
         fatherNameController.text = data['father_name'] ?? "";
@@ -89,21 +92,17 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         selectedSemester = semesters.contains(data['semester']) ? data['semester'] : "4th Semester";
         year = data['year'] ?? 1;
 
-        // Set Date of Birth and calculate Age
         if (data['dob'] != null && data['dob'].isNotEmpty) {
           selectedDOB = DateTime.parse(data['dob']);
           ageController.text = (DateTime.now().year - selectedDOB!.year).toString();
         }
 
-        // Load Profile Picture
         if (data['profile_picture'] != null && data['profile_picture'].isNotEmpty) {
           _saveImageToTempDirectory(data['profile_picture']).then((file) {
             setState(() {
               _image = file;
             });
           });
-        } else {
-          _image = null;
         }
       });
     } else {
@@ -113,6 +112,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     }
   }
 
+  // Save profile picture to temporary directory
   Future<File> _saveImageToTempDirectory(String base64Image) async {
     List<int> imageBytes = base64Decode(base64Image);
     final tempDir = await getTemporaryDirectory();
@@ -121,6 +121,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     return file;
   }
 
+  // Save student profile to backend
   Future<void> _saveProfile() async {
     if (_validateForm()) {
       String? base64Image;
@@ -170,8 +171,14 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     }
   }
 
+  // Validate input fields
   bool _validateForm() {
-    if (fullNameController.text.isEmpty || emailController.text.isEmpty || phoneController.text.isEmpty || fatherNameController.text.isEmpty || motherNameController.text.isEmpty || addressController.text.isEmpty) {
+    if (fullNameController.text.isEmpty ||
+        emailController.text.isEmpty ||
+        phoneController.text.isEmpty ||
+        fatherNameController.text.isEmpty ||
+        motherNameController.text.isEmpty ||
+        addressController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Please fill all the required fields")),
       );
@@ -183,7 +190,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Student Profile")),
+      appBar: AppBar(title: Text("Student Profile"), backgroundColor: Colors.deepPurple),
       body: Padding(
         padding: EdgeInsets.all(16.0),
         child: SingleChildScrollView(
@@ -197,47 +204,27 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                   child: _image == null ? Icon(Icons.camera_alt, size: 50) : null,
                 ),
               ),
-              TextField(controller: fullNameController, decoration: InputDecoration(labelText: "Full Name")),
-              TextField(controller: emailController, decoration: InputDecoration(labelText: "Email"), readOnly: true),
-              TextField(controller: addressController, decoration: InputDecoration(labelText: "Address")),
-              TextField(controller: phoneController, decoration: InputDecoration(labelText: "Phone")),
-              TextField(controller: fatherNameController, decoration: InputDecoration(labelText: "Father Name")),
-              TextField(controller: motherNameController, decoration: InputDecoration(labelText: "Mother Name")),
-
-              SizedBox(height: 20),
-              Text("Date of Birth"),
-              ElevatedButton(
-                onPressed: () => _selectDOB(context),
-                child: Text(selectedDOB == null
-                    ? "Select DOB"
-                    : DateFormat('yyyy-MM-dd').format(selectedDOB!)),
-              ),
-
-              TextField(controller: ageController, decoration: InputDecoration(labelText: "Age"), readOnly: true),
-
-              SizedBox(height: 20),
-              Text("Gender"),
-              DropdownButton<String>(
-                value: selectedGender.isNotEmpty ? selectedGender : null, // Ensure the value is not empty
-                onChanged: (String? newValue) {
-                  setState(() {
-                    selectedGender = newValue!;
-                  });
-                },
-                items: genders.map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-              ),
-
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
+              _buildTextField("Full Name", fullNameController),
+              _buildTextField("Email", emailController, readOnly: true),
+              _buildTextField("Address", addressController),
+              _buildTextField("Phone", phoneController),
+              _buildTextField("Father Name", fatherNameController),
+              _buildTextField("Mother Name", motherNameController),
+              const SizedBox(height: 20),
               ElevatedButton(onPressed: _saveProfile, child: Text("Save")),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTextField(String label, TextEditingController controller, {bool readOnly = false}) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(labelText: label),
+      readOnly: readOnly,
     );
   }
 }

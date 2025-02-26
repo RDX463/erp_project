@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'student_portal.dart'; // Import student portal page
+import 'package:shared_preferences/shared_preferences.dart';
+import 'student_portal.dart';
 
 class StudentLoginPage extends StatefulWidget {
   @override
@@ -9,17 +10,17 @@ class StudentLoginPage extends StatefulWidget {
 }
 
 class _StudentLoginPageState extends State<StudentLoginPage> {
-  TextEditingController nameController = TextEditingController();
   TextEditingController emailController = TextEditingController();
+  TextEditingController nameController = TextEditingController();
   bool _isLoading = false;
 
   // Method to handle student login
   Future<void> _login() async {
-    String name = nameController.text.trim();
     String email = emailController.text.trim();
+    String studentName = nameController.text.trim();
 
-    if (name.isEmpty || email.isEmpty) {
-      _showErrorDialog("Please enter both name and email.");
+    if (email.isEmpty || studentName.isEmpty) {
+      _showErrorDialog("Please enter both your email and name.");
       return;
     }
 
@@ -31,17 +32,21 @@ class _StudentLoginPageState extends State<StudentLoginPage> {
       final response = await http.post(
         Uri.parse('http://localhost:8000/student/login'), // Ensure API URL is correct
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'name': name, 'email': email}),
+        body: json.encode({'email': email, 'name': studentName}), // Send both email & name
       );
 
       final responseData = json.decode(response.body);
 
       if (response.statusCode == 200) {
-        // ✅ Successful login → Navigate to Student Portal
+        // ✅ Successful login → Store email & name in SharedPreferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString("student_email", email);
+        await prefs.setString("student_name", studentName); // Store student name too
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => StudentPortalPage(email: email), // Pass email to portal
+            builder: (context) => StudentPortalPage(email: email, studentName: studentName), // Pass name & email
           ),
         );
       } else {
@@ -95,7 +100,8 @@ class _StudentLoginPageState extends State<StudentLoginPage> {
                 border: OutlineInputBorder(),
               ),
             ),
-            SizedBox(height: 16),
+            SizedBox(height: 20),
+
             // Email TextField
             TextField(
               controller: emailController,
@@ -106,6 +112,7 @@ class _StudentLoginPageState extends State<StudentLoginPage> {
               keyboardType: TextInputType.emailAddress,
             ),
             SizedBox(height: 20),
+
             // Login Button
             _isLoading
                 ? CircularProgressIndicator()
