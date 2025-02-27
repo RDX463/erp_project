@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'fees_page.dart';  // Add this import
+import 'fees_page.dart';
 
 class AdminAdmissionPage extends StatefulWidget {
   @override
@@ -12,7 +12,8 @@ class _AdminAdmissionPageState extends State<AdminAdmissionPage> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController feesController = TextEditingController();
-  
+  final TextEditingController passwordController = TextEditingController(); // Added password field
+
   bool isLoading = false;
 
   Future<void> admitStudent() async {
@@ -20,30 +21,51 @@ class _AdminAdmissionPageState extends State<AdminAdmissionPage> {
       isLoading = true;
     });
 
-    final response = await http.post(
-      Uri.parse('http://localhost:5000/admin/admit-student'),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "name": nameController.text,
-        "email": emailController.text,
-        "total_fees": double.parse(feesController.text)
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      String studentId = data["student_id"]; // Only using student_id now
-
-      // Navigate to the Fees Page with the student_id
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => FeesPage(studentId: studentId),
-        ),
-      );
-    } else {
+    // Validate input
+    if (nameController.text.isEmpty ||
+        emailController.text.isEmpty ||
+        feesController.text.isEmpty ||
+        passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to admit student")),
+        SnackBar(content: Text("All fields are required!")),
+      );
+      setState(() {
+        isLoading = false;
+      });
+      return;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:5000/admin/admit-student'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "name": nameController.text,
+          "email": emailController.text,
+          "total_fees": double.tryParse(feesController.text) ?? 0.0, // Prevent parsing errors
+          "password": passwordController.text, // Added password field
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        String studentId = data["student_id"];
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => FeesPage(studentId: studentId),
+          ),
+        );
+      } else {
+        final errorData = jsonDecode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: ${errorData['detail']}")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("An error occurred: $e")),
       );
     }
 
@@ -60,26 +82,12 @@ class _AdminAdmissionPageState extends State<AdminAdmissionPage> {
         padding: EdgeInsets.all(16.0),
         child: Column(
           children: [
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(labelText: "Student Name"),
-            ),
-            TextField(
-              controller: emailController,
-              decoration: InputDecoration(labelText: "Email"),
-            ),
-            TextField(
-              controller: feesController,
-              decoration: InputDecoration(labelText: "Total Fees"),
-              keyboardType: TextInputType.number,
-            ),
+            TextField(controller: nameController, decoration: InputDecoration(labelText: "Student Name")),
+            TextField(controller: emailController, decoration: InputDecoration(labelText: "Email")),
+            TextField(controller: feesController, decoration: InputDecoration(labelText: "Total Fees"), keyboardType: TextInputType.number),
+            TextField(controller: passwordController, decoration: InputDecoration(labelText: "Password"), obscureText: true),
             SizedBox(height: 20),
-            isLoading
-                ? CircularProgressIndicator()
-                : ElevatedButton(
-                    onPressed: admitStudent,
-                    child: Text("Admit Student"),
-                  ),
+            isLoading ? CircularProgressIndicator() : ElevatedButton(onPressed: admitStudent, child: Text("Admit Student")),
           ],
         ),
       ),

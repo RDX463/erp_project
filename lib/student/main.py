@@ -121,21 +121,26 @@ async def update_student_profile(request: Request):
         data = await request.json()
         profile_data = StudentProfile(**data)
 
+        # Convert Pydantic model to dictionary and remove `None` values
+        update_data = {k: v for k, v in profile_data.dict(exclude_unset=True).items() if v is not None}
+
+        # Check if profile exists
         existing_profile = await student_profiles.find_one({"email": profile_data.email})
 
         if existing_profile:
             await student_profiles.update_one(
                 {"email": profile_data.email},
-                {"$set": profile_data.dict(exclude_unset=True)}
+                {"$set": update_data}
             )
             return {"message": "Profile updated successfully"}
         else:
-            await student_profiles.insert_one(profile_data.dict())
+            await student_profiles.insert_one(update_data)
             return {"message": "Profile created successfully"}
 
     except Exception as e:
         logging.error(f"Error updating profile: {str(e)}")
         raise HTTPException(status_code=400, detail="Error updating profile")
+
 
 # ✅ Get Student Name by Email API
 @app.get("/get_student_name_by_email")

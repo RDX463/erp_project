@@ -31,7 +31,7 @@ try:
     client = AsyncIOMotorClient("mongodb://localhost:27017")
     db = client.studentERP
     admins_collection = db.admins  
-    students_collection = db.admin_students  # Collection for admin-side student records
+    students_collection = db.students  # Collection for admin-side student records
     logging.info("✅ MongoDB connected successfully!")
 except Exception as e:
     logging.error(f"❌ MongoDB connection failed: {e}")
@@ -104,7 +104,6 @@ async def admit_student(student: StudentAdmission):
         raise HTTPException(status_code=400, detail="Student with this email already exists")
 
     student_id = generate_student_id()
-
     hashed_password = pwd_context.hash(student.password)
 
     student_entry = {
@@ -114,7 +113,7 @@ async def admit_student(student: StudentAdmission):
         "total_fees": student.total_fees,
         "paid_fees": 0,
         "remaining_fees": student.total_fees,
-        "password": hashed_password  # Store hashed password
+        "password": hashed_password
     }
 
     await students_collection.insert_one(student_entry)

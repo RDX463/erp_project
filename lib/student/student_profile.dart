@@ -91,41 +91,50 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   }
 
   // Save Student Profile
-  Future<void> _saveProfile() async {
-    final profileData = {
-      "email": emailController.text,
-      "full_name": fullNameController.text,
-      "address": addressController.text,
-      "father_name": fatherNameController.text,
-      "mother_name": motherNameController.text,
-      "phone": phoneController.text,
-      "gender": selectedGender,
-      "dob": selectedDOB != null ? DateFormat('yyyy-MM-dd').format(selectedDOB!) : "",
-    };
+  // Save Student Profile
+Future<void> _saveProfile() async {
+  String? base64Image;
+  if (_image != null) {
+    List<int> imageBytes = await _image!.readAsBytes();
+    base64Image = base64Encode(imageBytes);
+  }
 
-    try {
-      final url = Uri.parse("http://localhost:8000/update_student_profile");
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode(profileData),
-      );
+  final profileData = {
+    "email": emailController.text,
+    "full_name": fullNameController.text,
+    "address": addressController.text,
+    "father_name": fatherNameController.text,
+    "mother_name": motherNameController.text,
+    "phone": phoneController.text,
+    "gender": selectedGender,
+    "dob": selectedDOB != null ? DateFormat('yyyy-MM-dd').format(selectedDOB!) : "",
+    "profile_picture": base64Image,  // ✅ Include profile picture
+  };
 
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Profile updated successfully!")),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error saving profile: ${response.body}")),
-        );
-      }
-    } catch (e) {
+  try {
+    final url = Uri.parse("http://localhost:8000/update_student_profile");
+    final response = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(profileData),
+    );
+
+    if (response.statusCode == 200) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error saving profile: $e")),
+        SnackBar(content: Text("Profile updated successfully!")),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error saving profile: ${response.body}")),
       );
     }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Error saving profile: $e")),
+    );
   }
+}
+
 
   // Select Date of Birth
   Future<void> _selectDOB(BuildContext context) async {
