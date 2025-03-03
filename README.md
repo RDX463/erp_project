@@ -48,7 +48,7 @@ erp/
 ### 1️⃣ **Backend Setup (FastAPI)**
 ```sh
 cd backend
-pip install -r requirements.txt
+pip install -r requirement.txt
 uvicorn main:app --reload
 ```
 
