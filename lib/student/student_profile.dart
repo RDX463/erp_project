@@ -36,7 +36,6 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     _loadProfile();
   }
 
-  // Load Student Profile
   Future<void> _loadProfile() async {
     final url = Uri.parse("http://localhost:8000/get_student_profile?email=${Uri.encodeComponent(widget.email)}");
     final response = await http.get(url);
@@ -71,7 +70,6 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     }
   }
 
-  // Save profile picture to temp directory
   Future<File> _saveImageToTempDirectory(String base64Image) async {
     List<int> imageBytes = base64Decode(base64Image);
     final tempDir = await getTemporaryDirectory();
@@ -80,7 +78,6 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     return file;
   }
 
-  // Pick image from gallery
   Future<void> _pickImage() async {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
@@ -90,53 +87,49 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     }
   }
 
-  // Save Student Profile
-  // Save Student Profile
-Future<void> _saveProfile() async {
-  String? base64Image;
-  if (_image != null) {
-    List<int> imageBytes = await _image!.readAsBytes();
-    base64Image = base64Encode(imageBytes);
-  }
+  Future<void> _saveProfile() async {
+    String? base64Image;
+    if (_image != null) {
+      List<int> imageBytes = await _image!.readAsBytes();
+      base64Image = base64Encode(imageBytes);
+    }
 
-  final profileData = {
-    "email": emailController.text,
-    "full_name": fullNameController.text,
-    "address": addressController.text,
-    "father_name": fatherNameController.text,
-    "mother_name": motherNameController.text,
-    "phone": phoneController.text,
-    "gender": selectedGender,
-    "dob": selectedDOB != null ? DateFormat('yyyy-MM-dd').format(selectedDOB!) : "",
-    "profile_picture": base64Image,  // ✅ Include profile picture
-  };
+    final profileData = {
+      "email": emailController.text,
+      "full_name": fullNameController.text,
+      "address": addressController.text,
+      "father_name": fatherNameController.text,
+      "mother_name": motherNameController.text,
+      "phone": phoneController.text,
+      "gender": selectedGender,
+      "dob": selectedDOB != null ? DateFormat('yyyy-MM-dd').format(selectedDOB!) : "",
+      "profile_picture": base64Image,
+    };
 
-  try {
-    final url = Uri.parse("http://localhost:8000/update_student_profile");
-    final response = await http.post(
-      url,
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode(profileData),
-    );
-
-    if (response.statusCode == 200) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Profile updated successfully!")),
+    try {
+      final url = Uri.parse("http://localhost:8000/update_student_profile");
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(profileData),
       );
-    } else {
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Profile updated successfully!")),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error saving profile: ${response.body}")),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error saving profile: ${response.body}")),
+        SnackBar(content: Text("Error saving profile: $e")),
       );
     }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Error saving profile: $e")),
-    );
   }
-}
 
-
-  // Select Date of Birth
   Future<void> _selectDOB(BuildContext context) async {
     DateTime? picked = await showDatePicker(
       context: context,
@@ -151,23 +144,25 @@ Future<void> _saveProfile() async {
     }
   }
 
-  @override
   Widget _buildTextField(String label, TextEditingController controller, {bool readOnly = false}) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8.0),
-    child: TextField(
-      controller: controller,
-      readOnly: readOnly,
-      decoration: InputDecoration(
-        labelText: label,
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: TextField(
+        controller: controller,
+        readOnly: readOnly,
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.deepPurple[50],
@@ -183,7 +178,7 @@ Future<void> _saveProfile() async {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.deepPurple,
+                gradient: LinearGradient(colors: [Colors.deepPurple, Colors.purpleAccent]),
                 borderRadius: BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30)),
               ),
               child: Column(
@@ -191,7 +186,7 @@ Future<void> _saveProfile() async {
                   GestureDetector(
                     onTap: _pickImage,
                     child: CircleAvatar(
-                      radius: 50,
+                      radius: 55,
                       backgroundImage: _image != null ? FileImage(_image!) : null,
                       backgroundColor: Colors.white,
                       child: _image == null ? Icon(Icons.camera_alt, size: 50, color: Colors.deepPurple) : null,
@@ -216,41 +211,70 @@ Future<void> _saveProfile() async {
                   _buildTextField("Phone", phoneController),
                   _buildTextField("Father Name", fatherNameController),
                   _buildTextField("Mother Name", motherNameController),
+                  const SizedBox(height: 10),
 
-                  // Date of Birth Picker
-                  GestureDetector(
-                    onTap: () => _selectDOB(context),
-                    child: AbsorbPointer(
-                      child: TextField(
-                        controller: TextEditingController(text: selectedDOB != null ? DateFormat('yyyy-MM-dd').format(selectedDOB!) : ""),
-                        decoration: InputDecoration(
-                          labelText: "Date of Birth",
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                          suffixIcon: Icon(Icons.calendar_today),
+                  // Gender Selection
+                  Row(
+                    children: [
+                      Expanded(
+                        child: RadioListTile(
+                          title: Text("Male"),
+                          value: "Male",
+                          groupValue: selectedGender,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedGender = value.toString();
+                            });
+                          },
                         ),
                       ),
-                    ),
+                      Expanded(
+                        child: RadioListTile(
+                          title: Text("Female"),
+                          value: "Female",
+                          groupValue: selectedGender,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedGender = value.toString();
+                            });
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 10),
 
-                  // Gender Selection (Radio Buttons)
-                  Row(
-                    children: [
-                      Text("Gender: ", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      Radio(value: "Male", groupValue: selectedGender, onChanged: (value) => setState(() => selectedGender = value!)),
-                      Text("Male"),
-                      Radio(value: "Female", groupValue: selectedGender, onChanged: (value) => setState(() => selectedGender = value!)),
-                      Text("Female"),
-                    ],
+                  // Date of Birth Selection
+                  GestureDetector(
+                    onTap: () => _selectDOB(context),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(vertical: 15, horizontal: 10),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            selectedDOB != null ? DateFormat('yyyy-MM-dd').format(selectedDOB!) : "Select Date of Birth",
+                            style: TextStyle(fontSize: 16),
+                          ),
+                          Icon(Icons.calendar_today),
+                        ],
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 20),
 
                   // Save Button
                   ElevatedButton(
                     onPressed: _saveProfile,
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 40)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 40),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
                     child: const Text("Save", style: TextStyle(fontSize: 18, color: Colors.white)),
                   ),
                 ],
