@@ -259,3 +259,21 @@ async def apply_leave(request: dict):
         {"$push": {"leave_requests": {"reason": reason, "status": "Pending"}}}
     )
     return {"message": "Leave request submitted successfully"}
+
+# Dummy Timetable Data
+timetable_data = {
+    "Class 10": [
+        {"period": 1, "subject": "DL", "start_time": "08:00 AM", "end_time": "08:45 AM", "teacher": "Mr. Sharma"},
+        {"period": 2, "subject": "SDN", "start_time": "08:45 AM", "end_time": "09:30 AM", "teacher": "Ms. Kapoor"},
+        {"period": 3, "subject": "HPC", "start_time": "09:30 AM", "end_time": "10:15 AM", "teacher": "Dr. Mehta"},
+    ],
+    "Class 11": [
+        {"period": 1, "subject": "SDN", "start_time": "08:00 AM", "end_time": "08:45 AM", "teacher": "Dr. Rao"},
+        {"period": 2, "subject": "DL", "start_time": "08:45 AM", "end_time": "09:30 AM", "teacher": "Ms. Das"},
+        {"period": 3, "subject": "HPC", "start_time": "09:30 AM", "end_time": "10:15 AM", "teacher": "Mr. Verma"},
+    ]
+}
+
+@app.get("/get_timetable")
+async def get_timetable(class_name: str):
+    return timetable_data.get(class_name, [])

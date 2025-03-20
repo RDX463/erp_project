@@ -52,3 +52,30 @@ class _AccountsPageState extends State<AccountsPage> {
     );
   }
 }
+
+Future<void> fetchTimetable(String className) async {
+  try {
+    final response = await http.get(
+      Uri.parse("http://localhost:8000/get_timetable?class_name=$className"), // ✅ Fixed parameter
+    );
+
+    print("API Response Code: ${response.statusCode}");
+    print("API Response Body: ${response.body}");
+
+    if (response.statusCode == 200) {
+      List<dynamic> data = json.decode(response.body);
+      setState(() {
+        timetable = data.isEmpty ? getDummyTimetable() : data;
+      });
+    } else {
+      setState(() {
+        timetable = getDummyTimetable();
+      });
+    }
+  } catch (e) {
+    print("Error Fetching Timetable: $e");
+    setState(() {
+      timetable = getDummyTimetable();
+    });
+  }
+}

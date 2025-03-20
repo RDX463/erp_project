@@ -3,8 +3,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'student_profile.dart';
 import 'fees_page.dart';
 import 'attendance_page.dart';
-import 'notices_events_page.dart'; // Import Notices & Events page
-import 'documents_page.dart'; // Import Documents Upload page
+import 'notices_events_page.dart';
+import 'documents_page.dart';
+import 'timetable_page.dart'; // Import Timetable Page
 
 class StudentPortalPage extends StatefulWidget {
   final String email;
@@ -80,14 +81,21 @@ class _StudentPortalPageState extends State<StudentPortalPage> with TickerProvid
   void navigateToNoticesEvents() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const NoticesEventsPage()), // Navigate to Notices & Events page
+      MaterialPageRoute(builder: (context) => const NoticesEventsPage()), 
     );
   }
 
   void navigateToDocuments() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => DocumentsPage()), // Navigate to Documents Upload page
+      MaterialPageRoute(builder: (context) => DocumentsPage()), 
+    );
+  }
+
+  void navigateToTimetable() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => TimetablePage()), // ✅ Navigate to Timetable Page
     );
   }
 
@@ -130,8 +138,8 @@ class _StudentPortalPageState extends State<StudentPortalPage> with TickerProvid
                   _buildAnimatedButton("Fees", Icons.attach_money, navigateToFees, Colors.greenAccent),
                   _buildAnimatedButton("Attendance", Icons.event_available, navigateToAttendance, Colors.orangeAccent),
                   _buildAnimatedButton("Notices & Events", Icons.notifications, navigateToNoticesEvents, Colors.redAccent), 
-                  _buildAnimatedButton("Documents", Icons.folder, navigateToDocuments, Colors.tealAccent), // ✅ Documents Page Added
-                  _buildAnimatedButton("Timetable", Icons.schedule, () {}, Colors.purpleAccent),
+                  _buildAnimatedButton("Documents", Icons.folder, navigateToDocuments, Colors.tealAccent),
+                  _buildAnimatedButton("Timetable", Icons.schedule, navigateToTimetable, Colors.purpleAccent), // ✅ Timetable added
                 ],
               ),
             ),
