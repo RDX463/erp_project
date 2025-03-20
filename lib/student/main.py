@@ -230,15 +230,20 @@ async def get_all_students():
 # API: Get Student Attendance
 @app.get("/get_student_attendance")
 async def get_student_attendance(email: str):
-    student = students_collection.find_one({"email": email})
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
+    try:
+        # Use 'await' to resolve the Future object
+        student = await students_collection.find_one({"email": email})
 
-    return {
-        "name": student.get("name", ""),
-        "daily_attendance": student.get("daily_attendance", {}),
-        "subject_attendance": student.get("subject_attendance", {})
-    }
+        if not student:
+            raise HTTPException(status_code=404, detail="Student not found")
+
+        return {
+            "name": student.get("name", ""),
+            "daily_attendance": student.get("daily_attendance", {}),
+            "subject_attendance": student.get("subject_attendance", {})
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # API: Apply for Leave
 @app.post("/apply_leave")

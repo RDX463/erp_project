@@ -108,7 +108,7 @@ class _AttendancePageState extends State<AttendancePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Student: $studentName", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text("Student: $studentName", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold,color: Colors.black)),
             const SizedBox(height: 20),
 
             // Daily Attendance List
@@ -156,10 +156,18 @@ class _AttendancePageState extends State<AttendancePage> {
             ),
             const SizedBox(height: 10),
             ElevatedButton(
-              onPressed: applyForLeave,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-              child: const Text("Submit Leave Request"),
-            ),
+  onPressed: applyForLeave,
+  style: ElevatedButton.styleFrom(
+    backgroundColor: Colors.purple, // Set button background to purple
+    foregroundColor: Colors.white, // Ensure text is white for contrast
+    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+  ),
+  child: const Text(
+    "Submit Leave Request",
+    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white), // Ensure text is visible
+  ),
+),
           ],
         ),
       ),
