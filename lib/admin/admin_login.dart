@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'admin_signup.dart'; // Import the signup page
-import 'admin_dashboard.dart'; // Import the Admin Dashboard
+import 'admin_signup.dart';
+import 'admin_dashboard.dart';
 
 class AdminLoginPage extends StatefulWidget {
   const AdminLoginPage({super.key});
@@ -19,85 +19,68 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Admin Login"),
-        backgroundColor: Colors.blueAccent,
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+      backgroundColor: Colors.blueGrey[50], // Soft background color
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 40),
-              const Text(
-                'Admin Login',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blueAccent,
-                ),
-              ),
-              const SizedBox(height: 40),
-
-              // Employee ID TextField
-              TextField(
-                controller: emailController,
-                decoration: InputDecoration(
-                  labelText: "Employee ID",
-                  labelStyle: const TextStyle(color: Colors.blueAccent),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                    borderSide: const BorderSide(color: Colors.blueAccent),
-                  ),
-                  prefixIcon: const Icon(Icons.person, color: Colors.blueAccent),
-                ),
-                keyboardType: TextInputType.emailAddress,
+              // App Logo (Optional)
+              CircleAvatar(
+                radius: 50,
+                backgroundColor: Colors.blueAccent.shade100,
+                child: Icon(Icons.admin_panel_settings, size: 50, color: Colors.white),
               ),
               const SizedBox(height: 20),
 
-              // Password TextField
-              TextField(
-                controller: passwordController,
-                decoration: InputDecoration(
-                  labelText: "Password",
-                  labelStyle: const TextStyle(color: Colors.blueAccent),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                    borderSide: const BorderSide(color: Colors.blueAccent),
-                  ),
-                  prefixIcon: const Icon(Icons.lock, color: Colors.blueAccent),
-                ),
-                obscureText: true,
+              // Title
+              Text(
+                'Admin Login',
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blueAccent),
               ),
               const SizedBox(height: 30),
 
-              // Login Button
-              ElevatedButton(
-                onPressed: _isLoading ? null : _login, // Disable button while loading
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
-                ),
-                child: _isLoading
-                    ? const CircularProgressIndicator(
-                        color: Colors.white,
-                      )
-                    : const Text(
-                        "Login",
-                        style: TextStyle(fontSize: 18),
-                      ),
+              // Employee ID Field
+              buildTextField(
+                controller: emailController,
+                label: "Employee ID",
+                icon: Icons.person,
+                inputType: TextInputType.text,
               ),
+
+              const SizedBox(height: 20),
+
+              // Password Field
+              buildTextField(
+                controller: passwordController,
+                label: "Password",
+                icon: Icons.lock,
+                obscureText: true,
+              ),
+
+              const SizedBox(height: 30),
+
+              // Login Button with Loading Indicator
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _login,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 5,
+                  ),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                          "Login",
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                ),
+              ),
+
               const SizedBox(height: 20),
 
               // Sign up button
@@ -120,40 +103,62 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
     );
   }
 
+  // Custom TextField Widget
+  Widget buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    TextInputType inputType = TextInputType.text,
+    bool obscureText = false,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: inputType,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: Colors.blueAccent),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.blueAccent, width: 2),
+        ),
+      ),
+    );
+  }
+
   // Function to handle login
   void _login() async {
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     final url = 'http://localhost:5000/admin_login'; // Your FastAPI URL
 
-    // Send login data to FastAPI
-    final response = await http.post(
-      Uri.parse(url),
-      headers: {"Content-Type": "application/json"},
-      body: json.encode({
-        "employee_id": emailController.text,
-        "password": passwordController.text,
-      }),
-    );
-
-    // Check if the login was successful
-    if (response.statusCode == 200) {
-      // If login is successful, navigate to the Admin Dashboard
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => AdminDashboard()),
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {"Content-Type": "application/json"},
+        body: json.encode({
+          "employee_id": emailController.text.trim(),
+          "password": passwordController.text.trim(),
+        }),
       );
-    } else {
-      // If login fails, show an error message
-      final responseBody = json.decode(response.body);
-      _showErrorDialog(responseBody['detail'] ?? "Login Failed");
+
+      if (response.statusCode == 200) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => AdminDashboard()),
+        );
+      } else {
+        final responseBody = json.decode(response.body);
+        _showErrorDialog(responseBody['detail'] ?? "Invalid credentials");
+      }
+    } catch (e) {
+      _showErrorDialog("Network error! Please try again.");
     }
 
-    setState(() {
-      _isLoading = false;
-    });
+    setState(() => _isLoading = false);
   }
 
   // Function to show error message
@@ -166,10 +171,8 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
           content: Text(message),
           actions: <Widget>[
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text("OK"),
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("OK", style: TextStyle(color: Colors.blueAccent)),
             ),
           ],
         );
