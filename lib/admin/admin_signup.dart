@@ -13,154 +13,175 @@ class _AdminSignupPageState extends State<AdminSignupPage> {
   TextEditingController employeeIdController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   TextEditingController confirmPasswordController = TextEditingController();
+  bool isLoading = false; // For showing loading indicator
 
   // Function to handle signup
   Future<void> signupAdmin() async {
-    // Get the entered data
-    String employeeId = employeeIdController.text;
-    String password = passwordController.text;
-    String confirmPassword = confirmPasswordController.text;
+    setState(() => isLoading = true);
 
-    // Validate fields
+    String employeeId = employeeIdController.text.trim();
+    String password = passwordController.text.trim();
+    String confirmPassword = confirmPasswordController.text.trim();
+
     if (employeeId.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
-      );
+      showSnackbar("Please fill in all fields");
+      setState(() => isLoading = false);
       return;
     }
 
     if (password != confirmPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match')),
-      );
+      showSnackbar("Passwords do not match");
+      setState(() => isLoading = false);
       return;
     }
 
-    // Prepare data for API request
     final Map<String, String> data = {
       'employee_id': employeeId,
       'password': password,
       'confirm_password': confirmPassword
     };
 
-    // Send POST request to backend
-    final response = await http.post(
-      Uri.parse('http://localhost:5000/admin_signup'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode(data),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:5000/admin_signup'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(data),
+      );
 
-    if (response.statusCode == 200) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Signup successful')),
-      );
-    } else {
-      final errorMessage = json.decode(response.body)['detail'] ?? 'An error occurred';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage)),
-      );
+      if (response.statusCode == 200) {
+        showSnackbar("Signup successful!");
+      } else {
+        final errorMessage = json.decode(response.body)['detail'] ?? 'Signup failed';
+        showSnackbar(errorMessage);
+      }
+    } catch (e) {
+      showSnackbar("Network error! Please try again.");
     }
+
+    setState(() => isLoading = false);
+  }
+
+  void showSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Admin Signup'),
-        backgroundColor: Colors.blueAccent,
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(height: 40),
-              const Text(
-                'Create Admin Account',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blueAccent,
+      backgroundColor: Colors.blueGrey[50], // Soft background color
+      body: Center(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // App Logo (Optional)
+                CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.blueAccent.shade100,
+                  child: Icon(Icons.admin_panel_settings, size: 50, color: Colors.white),
                 ),
-              ),
-              const SizedBox(height: 40),
+                const SizedBox(height: 20),
 
-              // Employee ID TextField
-              TextField(
-                controller: employeeIdController,
-                decoration: InputDecoration(
-                  labelText: "Employee ID",
-                  labelStyle: const TextStyle(color: Colors.blueAccent),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                    borderSide: const BorderSide(color: Colors.blueAccent),
-                  ),
-                  prefixIcon: const Icon(Icons.person, color: Colors.blueAccent),
+                // Title
+                Text(
+                  'Admin Signup',
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blueAccent),
                 ),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 20),
+                const SizedBox(height: 30),
 
-              // Password TextField
-              TextField(
-                controller: passwordController,
-                decoration: InputDecoration(
-                  labelText: "Password",
-                  labelStyle: const TextStyle(color: Colors.blueAccent),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                    borderSide: const BorderSide(color: Colors.blueAccent),
-                  ),
-                  prefixIcon: const Icon(Icons.lock, color: Colors.blueAccent),
+                // Employee ID Field
+                buildTextField(
+                  controller: employeeIdController,
+                  label: "Employee ID",
+                  icon: Icons.person,
+                  inputType: TextInputType.text,
                 ),
-                obscureText: true,
-              ),
-              const SizedBox(height: 20),
 
-              // Confirm Password TextField
-              TextField(
-                controller: confirmPasswordController,
-                decoration: InputDecoration(
-                  labelText: "Re-enter Password",
-                  labelStyle: const TextStyle(color: Colors.blueAccent),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                    borderSide: const BorderSide(color: Colors.blueAccent),
-                  ),
-                  prefixIcon: const Icon(Icons.lock, color: Colors.blueAccent),
-                ),
-                obscureText: true,
-              ),
-              const SizedBox(height: 30),
+                const SizedBox(height: 20),
 
-              // Signup Button
-              ElevatedButton(
-                onPressed: signupAdmin,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent, // Button color
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.0),
+                // Password Field
+                buildTextField(
+                  controller: passwordController,
+                  label: "Password",
+                  icon: Icons.lock,
+                  obscureText: true,
+                ),
+
+                const SizedBox(height: 20),
+
+                // Confirm Password Field
+                buildTextField(
+                  controller: confirmPasswordController,
+                  label: "Re-enter Password",
+                  icon: Icons.lock_outline,
+                  obscureText: true,
+                ),
+
+                const SizedBox(height: 30),
+
+                // Signup Button with Loading Indicator
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: isLoading ? null : signupAdmin,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 5,
+                    ),
+                    child: isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                            "Sign Up",
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
                   ),
                 ),
-                child: const Text(
-                  "Signup",
-                  style: TextStyle(fontSize: 18),
+
+                const SizedBox(height: 20),
+
+                // Login Redirection
+                TextButton(
+                  onPressed: () {
+                    // Navigate to login page (Add navigation logic)
+                  },
+                  child: const Text(
+                    "Already have an account? Log in",
+                    style: TextStyle(color: Colors.blueAccent, fontSize: 16),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-            ],
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+
+  // Custom TextField Widget
+  Widget buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    TextInputType inputType = TextInputType.text,
+    bool obscureText = false,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: inputType,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: Colors.blueAccent),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.blueAccent, width: 2),
         ),
       ),
     );
