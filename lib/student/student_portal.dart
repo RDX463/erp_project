@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'student_profile.dart';
 import 'fees_page.dart';
+import 'attendance_page.dart';
 
 class StudentPortalPage extends StatefulWidget {
   final String email;
@@ -13,7 +14,7 @@ class StudentPortalPage extends StatefulWidget {
   _StudentPortalPageState createState() => _StudentPortalPageState();
 }
 
-class _StudentPortalPageState extends State<StudentPortalPage> with SingleTickerProviderStateMixin {
+class _StudentPortalPageState extends State<StudentPortalPage> with TickerProviderStateMixin {
   String studentName = "Unknown";
   String studentEmail = "";
   late AnimationController _animationController;
@@ -29,7 +30,7 @@ class _StudentPortalPageState extends State<StudentPortalPage> with SingleTicker
       duration: const Duration(milliseconds: 150),
       lowerBound: 0.95,
       upperBound: 1.0,
-    );
+    )..forward();
   }
 
   @override
@@ -67,6 +68,13 @@ class _StudentPortalPageState extends State<StudentPortalPage> with SingleTicker
     );
   }
 
+  void navigateToAttendance() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => AttendancePage(email: studentEmail)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -81,6 +89,7 @@ class _StudentPortalPageState extends State<StudentPortalPage> with SingleTicker
         child: Column(
           children: [
             const SizedBox(height: 60),
+
             // Welcome Text
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -98,7 +107,7 @@ class _StudentPortalPageState extends State<StudentPortalPage> with SingleTicker
                 children: [
                   _buildAnimatedButton("Profile", Icons.person, navigateToProfile, Colors.blueAccent),
                   _buildAnimatedButton("Fees", Icons.attach_money, navigateToFees, Colors.greenAccent),
-                  _buildAnimatedButton("Attendance", Icons.event_available, () {}, Colors.orangeAccent),
+                  _buildAnimatedButton("Attendance", Icons.event_available, navigateToAttendance, Colors.orangeAccent),
                   _buildAnimatedButton("Notices & Events", Icons.notifications, () {}, Colors.redAccent),
                   _buildAnimatedButton("Documents", Icons.folder, () {}, Colors.tealAccent),
                   _buildAnimatedButton("Timetable", Icons.schedule, () {}, Colors.purpleAccent),
@@ -116,11 +125,7 @@ class _StudentPortalPageState extends State<StudentPortalPage> with SingleTicker
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: GestureDetector(
-        onTapDown: (_) => _animationController.reverse(), // Scale Down
-        onTapUp: (_) {
-          _animationController.forward(); // Scale Back Up
-          onTap();
-        },
+        onTap: onTap,
         child: ScaleTransition(
           scale: _animationController,
           child: Container(

@@ -226,3 +226,31 @@ async def get_all_students():
     except Exception as e:
         logging.error(f"Error fetching students: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching students: {str(e)}")
+
+# API: Get Student Attendance
+@app.get("/get_student_attendance")
+async def get_student_attendance(email: str):
+    student = students_collection.find_one({"email": email})
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    return {
+        "name": student.get("name", ""),
+        "daily_attendance": student.get("daily_attendance", {}),
+        "subject_attendance": student.get("subject_attendance", {})
+    }
+
+# API: Apply for Leave
+@app.post("/apply_leave")
+async def apply_leave(request: dict):
+    email = request.get("email")
+    reason = request.get("reason")
+
+    if not email or not reason:
+        raise HTTPException(status_code=400, detail="Invalid request")
+
+    students_collection.update_one(
+        {"email": email},
+        {"$push": {"leave_requests": {"reason": reason, "status": "Pending"}}}
+    )
+    return {"message": "Leave request submitted successfully"}
