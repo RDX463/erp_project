@@ -15,9 +15,11 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'ERP Role Login',
       theme: ThemeData(
+        fontFamily: 'Arial',
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
+      debugShowCheckedModeBanner: false, // Hide debug banner
       home: const RoleSelectionPage(),
     );
   }
@@ -29,65 +31,97 @@ class RoleSelectionPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Select Your Role', style: TextStyle(fontSize: 24)),
-        backgroundColor: Colors.deepPurple, // AppBar color
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                'Welcome to the ERP System',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.deepPurple,
-                ),
+      body: Stack(
+        children: [
+          // 🌈 Gradient Background
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.deepPurple.shade500, Colors.purpleAccent.shade200],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
               ),
-              const SizedBox(height: 40),
-              // Role Buttons
-              RoleButton(role: 'Student', page: StudentLoginPage()),
-              RoleButton(role: 'Admin', page: const AdminLoginPage()),
-              RoleButton(role: 'Faculty', page: const FacultyLoginPage()),
-            ],
+            ),
           ),
-        ),
+
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 🎓 Welcome Text
+                  const Text(
+                    "Welcome to ERP System",
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 1.2,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 30),
+
+                  // 🎭 Role Selection Buttons
+                  RoleCard(role: 'Student', icon: Icons.school, page: StudentLoginPage()),
+                  RoleCard(role: 'Admin', icon: Icons.admin_panel_settings, page: const AdminLoginPage()),
+                  RoleCard(role: 'Faculty', icon: Icons.person, page: const FacultyLoginPage()),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class RoleButton extends StatelessWidget {
+class RoleCard extends StatelessWidget {
   final String role;
+  final IconData icon;
   final Widget page;
-  
-  const RoleButton({super.key, required this.role, required this.page});
+
+  const RoleCard({super.key, required this.role, required this.icon, required this.page});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
-      child: ElevatedButton(
-        onPressed: () => Navigator.push(
-          context, MaterialPageRoute(builder: (context) => page)),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.deepPurple, // Correct parameter for background color
-          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 30.0),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12.0), // Rounded corners
+      padding: const EdgeInsets.symmetric(vertical: 10.0),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => page));
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          height: 80,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(15.0),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 8,
+                spreadRadius: 2,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          elevation: 5,
-        ),
-        child: Text(
-          'Login as $role',
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Colors.white, // Ensure text is white for visibility
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 32, color: Colors.deepPurple),
+              const SizedBox(width: 15),
+              Text(
+                "Login as $role",
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurple,
+                ),
+              ),
+            ],
           ),
         ),
       ),
