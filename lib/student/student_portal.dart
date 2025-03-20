@@ -3,7 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'student_profile.dart';
 import 'fees_page.dart';
 import 'attendance_page.dart';
-import 'notices_events_page.dart'; // Import the Notices & Events page
+import 'notices_events_page.dart'; // Import Notices & Events page
+import 'documents_page.dart'; // Import Documents Upload page
 
 class StudentPortalPage extends StatefulWidget {
   final String email;
@@ -83,6 +84,13 @@ class _StudentPortalPageState extends State<StudentPortalPage> with TickerProvid
     );
   }
 
+  void navigateToDocuments() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => DocumentsPage()), // Navigate to Documents Upload page
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -121,8 +129,8 @@ class _StudentPortalPageState extends State<StudentPortalPage> with TickerProvid
                   _buildAnimatedButton("Profile", Icons.person, navigateToProfile, Colors.blueAccent),
                   _buildAnimatedButton("Fees", Icons.attach_money, navigateToFees, Colors.greenAccent),
                   _buildAnimatedButton("Attendance", Icons.event_available, navigateToAttendance, Colors.orangeAccent),
-                  _buildAnimatedButton("Notices & Events", Icons.notifications, navigateToNoticesEvents, Colors.redAccent), // ✅ Updated
-                  _buildAnimatedButton("Documents", Icons.folder, () {}, Colors.tealAccent),
+                  _buildAnimatedButton("Notices & Events", Icons.notifications, navigateToNoticesEvents, Colors.redAccent), 
+                  _buildAnimatedButton("Documents", Icons.folder, navigateToDocuments, Colors.tealAccent), // ✅ Documents Page Added
                   _buildAnimatedButton("Timetable", Icons.schedule, () {}, Colors.purpleAccent),
                 ],
               ),
