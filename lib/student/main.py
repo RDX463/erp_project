@@ -4,8 +4,17 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from datetime import datetime
 import logging
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins (Change this to specific origins for security)
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods (GET, POST, PUT, DELETE, etc.)
+    allow_headers=["*"],  # Allow all headers
+)
 
 # ✅ MongoDB Connection
 client = AsyncIOMotorClient("mongodb://localhost:27017")
