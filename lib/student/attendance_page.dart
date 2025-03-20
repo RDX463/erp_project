@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AttendancePage extends StatefulWidget {
   final String email;
 
-  // Constructor accepting email
   const AttendancePage({Key? key, required this.email}) : super(key: key);
 
   @override
@@ -15,24 +14,22 @@ class AttendancePage extends StatefulWidget {
 
 class _AttendancePageState extends State<AttendancePage> {
   String studentName = "Loading...";
-  Map<String, String> dailyAttendance = {}; // Stores attendance per day
-  Map<String, double> subjectAttendance = {}; // Stores subject-wise attendance
+  Map<String, String> dailyAttendance = {};
+  Map<String, double> subjectAttendance = {};
   TextEditingController reasonController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    fetchStudentEmail(); // Load email from SharedPreferences and fetch attendance
+    fetchStudentEmail();
   }
 
-  // Fetch email from SharedPreferences
   Future<void> fetchStudentEmail() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? email = prefs.getString("student_email") ?? widget.email;
     fetchAttendanceData(email);
   }
 
-  // Fetch Attendance Data from API
   Future<void> fetchAttendanceData(String email) async {
     try {
       final response = await http.get(
@@ -63,7 +60,6 @@ class _AttendancePageState extends State<AttendancePage> {
     }
   }
 
-  // Apply for Leave
   Future<void> applyForLeave() async {
     if (reasonController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -102,29 +98,58 @@ class _AttendancePageState extends State<AttendancePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Attendance"), backgroundColor: Colors.orangeAccent),
+      backgroundColor: Colors.grey[100],
+      appBar: AppBar(
+        title: const Text("Attendance"),
+        backgroundColor: Colors.deepPurple,
+        elevation: 5,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Student: $studentName", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold,color: Colors.black)),
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              color: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    const Icon(Icons.person, color: Colors.deepPurple, size: 40),
+                    const SizedBox(width: 12),
+                    Text(
+                      "Student: $studentName",
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 20),
 
-            // Daily Attendance List
+            // Daily Attendance
+            const Text("Daily Attendance", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
             Expanded(
               child: ListView.builder(
                 itemCount: dailyAttendance.length,
                 itemBuilder: (context, index) {
                   String date = dailyAttendance.keys.elementAt(index);
                   String status = dailyAttendance[date] ?? "Absent";
-                  return ListTile(
-                    title: Text("Date: $date"),
-                    trailing: Text(
-                      status,
-                      style: TextStyle(
+                  return Card(
+                    elevation: 3,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    child: ListTile(
+                      title: Text("Date: $date"),
+                      trailing: Text(
+                        status,
+                        style: TextStyle(
                           color: status == "Present" ? Colors.green : Colors.red,
-                          fontWeight: FontWeight.bold),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   );
                 },
@@ -132,42 +157,72 @@ class _AttendancePageState extends State<AttendancePage> {
             ),
 
             const SizedBox(height: 20),
-            const Text("Subject-wise Attendance Report",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text("Subject-wise Attendance", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
 
-            // Subject Attendance List
             Column(
               children: subjectAttendance.entries.map((entry) {
-                return ListTile(
-                  title: Text(entry.key),
-                  trailing: Text("${entry.value.toStringAsFixed(1)}%"),
+                return Card(
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  child: ListTile(
+                    title: Text(entry.key),
+                    trailing: Text("${entry.value.toStringAsFixed(1)}%", style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ),
                 );
               }).toList(),
             ),
 
             const SizedBox(height: 20),
-            const Text("Apply for Leave", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            TextField(
-              controller: reasonController,
-              decoration: const InputDecoration(
-                hintText: "Enter reason for leave",
-                border: OutlineInputBorder(),
+            // Apply for Leave Section
+            Container(
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [Colors.purpleAccent, Colors.deepPurple]),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Apply for Leave",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: reasonController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: "Enter reason for leave",
+                      hintStyle: const TextStyle(color: Colors.white70),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Colors.white),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: applyForLeave,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.deepPurple,
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: const Text(
+                        "Submit Leave Request",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-  onPressed: applyForLeave,
-  style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.purple, // Set button background to purple
-    foregroundColor: Colors.white, // Ensure text is white for contrast
-    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-  ),
-  child: const Text(
-    "Submit Leave Request",
-    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white), // Ensure text is visible
-  ),
-),
           ],
         ),
       ),
