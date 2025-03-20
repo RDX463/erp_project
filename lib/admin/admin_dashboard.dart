@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'admin_admission_page.dart';  // Import Student Admission Page
-import 'fees_page.dart';  // Import Fees Management Page
+import 'admin_admission_page.dart';
+import 'fees_page.dart';
 
 class AdminDashboard extends StatefulWidget {
   @override
@@ -13,61 +13,99 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Admin Dashboard"),
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.blueAccent,
+        elevation: 0,
         actions: [
           IconButton(
             icon: Icon(Icons.logout),
             onPressed: () {
-              // TODO: Implement Logout Functionality
+              // TODO: Implement Logout functionality
               Navigator.pop(context);
             },
-          )
+          ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.blueAccent.shade100, Colors.blueAccent.shade400],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        padding: EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Welcome, Admin!",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 20),
-
-            // 📌 Admit Student Button
-            ElevatedButton.icon(
-              icon: Icon(Icons.person_add),
-              label: Text("Admit Student"),
-              onPressed: () {
-                // Navigate to Student Admission Page
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => AdminAdmissionPage()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.all(15),
-                backgroundColor: Colors.green,
+              "👋 Welcome, Admin!",
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
-            SizedBox(height: 20),
+            SizedBox(height: 30),
 
-            // 📌 Fees Management Section
+            // Admit Student Button
+            Center(
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: Icon(Icons.person_add, size: 28),
+                  label: Text(
+                    "Admit New Student",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold ,color:Colors.white),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green.shade600,
+                    padding: EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 8,
+                    shadowColor: Colors.greenAccent,
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => AdminAdmissionPage()),
+                    );
+                  },
+                ),
+              ),
+            ),
+
+            SizedBox(height: 30),
+
+            // Fees Management Card
             Card(
-  elevation: 4,
-  child: ListTile(
-    leading: Icon(Icons.payment, color: Colors.orange),
-    title: Text("Fees Management"),
-    subtitle: Text("Update and track student fees"),
-    onTap: () {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Go to Admission Page first!"))
-      );
-    },
-  ),
-),
-
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              elevation: 8,
+              shadowColor: Colors.black38,
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Colors.orange.shade200,
+                  child: Icon(Icons.payment, color: Colors.orange.shade800),
+                ),
+                title: Text(
+                  "Fees Management",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+                subtitle: Text("Update, manage & track fees easily."),
+                trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text("Please go to Admission Page first!"),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+              ),
+            ),
           ],
         ),
       ),
