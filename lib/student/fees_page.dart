@@ -24,11 +24,9 @@ class _LoginPageState extends State<LoginPage> {
     );
 
     if (response.statusCode == 200) {
-      // Save email in SharedPreferences
       SharedPreferences prefs = await SharedPreferences.getInstance();
       prefs.setString('student_email', emailController.text);
 
-      // Navigate to the Fees Payment page
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => FeesPaymentPage()),
@@ -57,11 +55,12 @@ class _LoginPageState extends State<LoginPage> {
               obscureText: true,
               decoration: InputDecoration(labelText: "Password"),
             ),
+            SizedBox(height: 20),
             ElevatedButton(
               onPressed: loginUser,
               child: Text("Login"),
             ),
-            if (errorMessage.isNotEmpty) 
+            if (errorMessage.isNotEmpty)
               Text(errorMessage, style: TextStyle(color: Colors.red)),
           ],
         ),
@@ -82,14 +81,14 @@ class _FeesPaymentPageState extends State<FeesPaymentPage> {
   String paidFees = "Unknown";
   String remainingFees = "Unknown";
   String selectedYear = "2025";
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    fetchStudentEmail();  // Fetch email from SharedPreferences
+    fetchStudentEmail();
   }
 
-  // Fetch the student's email from SharedPreferences
   Future<void> fetchStudentEmail() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -97,54 +96,53 @@ class _FeesPaymentPageState extends State<FeesPaymentPage> {
     });
 
     if (studentEmail.isNotEmpty) {
-      fetchStudentName();  // Fetch student name if email is available
-      fetchFeesData();  // Fetch fees data if email is available
+      await fetchStudentData();
     }
   }
 
-  // Fetch Student Name from the API
-  Future<void> fetchStudentName() async {
-    final response = await http.get(
-      Uri.parse("http://localhost:8000/get_student_name_by_email?email=$studentEmail"),
-    );
+  Future<void> fetchStudentData() async {
+    try {
+      final nameResponse = await http.get(
+        Uri.parse("http://localhost:8000/get_student_name_by_email?email=$studentEmail"),
+      );
+      final feesResponse = await http.get(
+        Uri.parse("http://localhost:8000/get_student_fees?email=$studentEmail&academic_year=$selectedYear"),
+      );
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      setState(() {
-        studentName = data["full_name"];
-      });
-    } else {
-      setState(() {
-        studentName = "Not Found";
-      });
-    }
-  }
+      if (nameResponse.statusCode == 200 && feesResponse.statusCode == 200) {
+        final nameData = json.decode(nameResponse.body);
+        final feesData = json.decode(feesResponse.body);
 
-  // Fetch Fees Data from the API
-  Future<void> fetchFeesData() async {
-    final response = await http.get(
-      Uri.parse("http://localhost:8000/get_student_fees?email=$studentEmail&academic_year=$selectedYear"),
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
+        setState(() {
+          studentName = nameData["full_name"];
+          totalFees = feesData["total_fees"].toString();
+          paidFees = feesData["paid_fees"].toString();
+          remainingFees = feesData["remaining_fees"].toString();
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          studentName = "Not Found";
+          totalFees = "Error fetching";
+          paidFees = "Error fetching";
+          remainingFees = "Error fetching";
+          isLoading = false;
+        });
+      }
+    } catch (e) {
       setState(() {
-        totalFees = data["total_fees"].toString();
-        paidFees = data["paid_fees"].toString();
-        remainingFees = data["remaining_fees"].toString();
-      });
-    } else {
-      setState(() {
-        totalFees = "Unknown";
-        paidFees = "Unknown";
-        remainingFees = "Unknown";
+        studentName = "Error loading";
+        totalFees = "Error";
+        paidFees = "Error";
+        remainingFees = "Error";
+        isLoading = false;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (studentEmail.isEmpty) {
+    if (isLoading) {
       return Scaffold(
         appBar: AppBar(title: Text("Fees Payment")),
         body: Center(child: CircularProgressIndicator()),
@@ -169,8 +167,9 @@ class _FeesPaymentPageState extends State<FeesPaymentPage> {
               onChanged: (newYear) {
                 setState(() {
                   selectedYear = newYear!;
-                  fetchFeesData();  // Fetch fees again for the new year
+                  isLoading = true;
                 });
+                fetchStudentData();
               },
             ),
             SizedBox(height: 20),
@@ -180,14 +179,14 @@ class _FeesPaymentPageState extends State<FeesPaymentPage> {
             SizedBox(height: 20),
             Center(
               child: ElevatedButton(
-                onPressed: null,  // Disabled (Admin updates fees)
+                onPressed: (remainingFees != "0" && remainingFees != "Unknown") ? () => payFees() : null,
                 child: Text("Pay Now"),
               ),
             ),
             SizedBox(height: 20),
             Center(
               child: ElevatedButton(
-                onPressed: null,  // Disabled (Receipt requires valid fees data)
+                onPressed: (paidFees != "0" && paidFees != "Unknown") ? () => printReceipt() : null,
                 child: Text("Print Receipt"),
               ),
             ),
@@ -208,5 +207,15 @@ class _FeesPaymentPageState extends State<FeesPaymentPage> {
         ],
       ),
     );
+  }
+
+  void payFees() {
+    // Implement payment logic here
+    print("Payment initiated for $studentEmail");
+  }
+
+  void printReceipt() {
+    // Implement receipt printing logic here
+    print("Receipt printing for $studentEmail");
   }
 }

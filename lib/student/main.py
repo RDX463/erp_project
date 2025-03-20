@@ -153,14 +153,19 @@ async def get_student_name_by_email(email: str):
 # ✅ Get Student Fees API
 @app.get("/get_student_fees")
 async def get_student_fees(email: str, academic_year: str):
-    fees = await fees_collection.find_one({"email": email, "academic_year": academic_year})
-    if fees:
-        return {
-            "total_fees": fees["total_fees"],
-            "paid_fees": fees["paid_fees"],
-            "remaining_fees": fees["remaining_fees"]
-        }
-    raise HTTPException(status_code=404, detail="Fees not found")
+    student = await students_collection.find_one({"email": email})
+
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    fees_data = student.get("fees", {}).get(academic_year, {})
+
+    # Return default values if no data exists
+    return {
+        "total_fees": fees_data.get("total_fees", 0),
+        "paid_fees": fees_data.get("paid_fees", 0),
+        "remaining_fees": fees_data.get("remaining_fees", 0)
+    }
 
 # ✅ Admin Updates Student Fees API
 @app.post("/update_student_fees")
