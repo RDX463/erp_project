@@ -11,8 +11,8 @@ class _AdminStudentsPageState extends State<AdminStudentsPage> {
   List<Map<String, dynamic>> students = [];
   bool isLoading = true;
 
-  // Course options
   final List<String> courses = ["No Course", "CS", "ENTC", "Mechanical", "AIDS", "Civil"];
+  final List<String> years = ["FE", "SE", "TE", "BE"]; // Year selection for promotion
 
   @override
   void initState() {
@@ -20,7 +20,6 @@ class _AdminStudentsPageState extends State<AdminStudentsPage> {
     fetchStudents();
   }
 
-  // Function to fetch student data from FastAPI
   Future<void> fetchStudents() async {
     final url = 'http://localhost:5000/admin/students';
 
@@ -33,8 +32,7 @@ class _AdminStudentsPageState extends State<AdminStudentsPage> {
         setState(() {
           students = jsonResponse.map((student) {
             String course = student["course"] ?? "No Course";
-            
-            // Ensure course exists in the list
+
             if (!courses.contains(course)) {
               course = "No Course";
             }
@@ -46,6 +44,8 @@ class _AdminStudentsPageState extends State<AdminStudentsPage> {
               "phone": student["phone"] ?? "No Phone",
               "course": course,
               "result_score": student["result_score"] ?? 0,
+              "edited_score": student["result_score"], // Track edited value
+              "promotion_year": null, // Track selected promotion year
             };
           }).toList();
           isLoading = false;
@@ -61,41 +61,60 @@ class _AdminStudentsPageState extends State<AdminStudentsPage> {
     }
   }
 
-  // Function to update student course in the database
   Future<void> updateCourse(String studentId, String newCourse) async {
-    final url = 'http://localhost:5000/admin/update_course/$studentId';
+  final url = Uri.parse("http://localhost:5000/admin/update_course/$studentId");
 
-    try {
-      final response = await http.put(
-        Uri.parse(url),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"course": newCourse}),
-      );
+  final response = await http.put(
+    url,
+    headers: {"Content-Type": "application/json"},
+    body: jsonEncode({"course": newCourse}),
+  );
 
-      if (response.statusCode == 200) {
-        print("Course updated successfully");
-      } else {
-        print("Failed to update course");
-      }
-    } catch (e) {
-      print("Error updating course: $e");
-    }
+  if (response.statusCode == 200) {
+    print("Course updated successfully");
+  } else {
+    print("Failed to update course: ${response.body}");
   }
+}
 
-  // Function to promote student based on result score
-  Future<void> promoteStudent(String studentId) async {
+
+  Future<void> promoteStudent(String studentId, String year) async {
     final url = 'http://localhost:5000/admin/promote_student/$studentId';
 
     try {
-      final response = await http.post(Uri.parse(url));
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"promotion_year": year}),
+      );
 
       if (response.statusCode == 200) {
-        print("Student promoted successfully");
+        print("Student promoted to $year successfully");
       } else {
         print("Failed to promote student");
       }
     } catch (e) {
       print("Error promoting student: $e");
+    }
+  }
+
+  Future<void> updateResultScore(String studentId, int newScore) async {
+    final url = 'http://localhost:5000/admin/update_result/$studentId';
+
+    try {
+      final response = await http.put(
+        Uri.parse(url),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"result_score": newScore}),
+      );
+
+      if (response.statusCode == 200) {
+        print("Result score updated successfully");
+      } else {
+        print("Failed to update result score");
+      }
+    } catch (e) {
+      print("Error updating result score: $e");
     }
   }
 
@@ -107,7 +126,7 @@ class _AdminStudentsPageState extends State<AdminStudentsPage> {
         backgroundColor: Colors.blueAccent,
       ),
       body: isLoading
-          ? Center(child: CircularProgressIndicator()) // Show loading indicator
+          ? Center(child: CircularProgressIndicator())
           : students.isEmpty
               ? Center(child: Text("No students found"))
               : Padding(
@@ -124,8 +143,12 @@ class _AdminStudentsPageState extends State<AdminStudentsPage> {
                         DataColumn(label: Text("Course")),
                         DataColumn(label: Text("Result Score")),
                         DataColumn(label: Text("Promote")),
+                        DataColumn(label: Text("Save")), // Save moved to rightmost
                       ],
                       rows: students.map((student) {
+                        TextEditingController resultController =
+                            TextEditingController(text: student['edited_score'].toString());
+
                         return DataRow(cells: [
                           DataCell(Text(student['student_id'].toString())),
                           DataCell(Text(student["name"])),
@@ -150,13 +173,52 @@ class _AdminStudentsPageState extends State<AdminStudentsPage> {
                               },
                             ),
                           ),
-                          DataCell(Text(student['result_score'].toString())),
+                          DataCell(
+                            TextFormField(
+                              controller: resultController,
+                              keyboardType: TextInputType.number,
+                              onChanged: (newValue) {
+                                int? newScore = int.tryParse(newValue);
+                                if (newScore != null) {
+                                  setState(() {
+                                    student['edited_score'] = newScore;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                          DataCell(
+                            DropdownButton<String>(
+                              value: student["promotion_year"],
+                              hint: Text("Select Year"),
+                              items: years.map((year) {
+                                return DropdownMenuItem(
+                                  value: year,
+                                  child: Text(year),
+                                );
+                              }).toList(),
+                              onChanged: (newYear) {
+                                if (newYear != null) {
+                                  setState(() {
+                                    student["promotion_year"] = newYear;
+                                  });
+                                  promoteStudent(student['student_id'], newYear);
+                                }
+                              },
+                            ),
+                          ),
                           DataCell(
                             ElevatedButton(
-                              onPressed: student["result_score"] >= 50
-                                  ? () => promoteStudent(student['student_id'])
+                              onPressed: student['result_score'] != student['edited_score']
+                                  ? () async {
+                                      await updateResultScore(
+                                          student['student_id'], student['edited_score']);
+                                      setState(() {
+                                        student['result_score'] = student['edited_score'];
+                                      });
+                                    }
                                   : null,
-                              child: Text("Promote"),
+                              child: Text("Save"),
                             ),
                           ),
                         ]);

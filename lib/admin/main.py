@@ -11,6 +11,7 @@ import random
 import string
 from typing import Optional
 from fastapi import APIRouter
+from datetime import datetime
 
 # Initialize FastAPI
 app = FastAPI()
@@ -37,6 +38,7 @@ try:
     db = client.studentERP
     admins_collection = db.admins  
     students_collection = db.students  # Collection for admin-side student records
+    notifications_collection = db["notifications"]
     logging.info("✅ MongoDB connected successfully!")
 except Exception as e:
     logging.error(f"❌ MongoDB connection failed: {e}")
@@ -202,34 +204,56 @@ async def test_route():
 
 @app.put("/admin/update_course/{student_id}")
 async def update_course(student_id: str, data: dict):
-    updated_course = data.get("course")
-    if not updated_course:
-        return {"error": "Course is required"}
-    
-    result = students_collection.update_one(
-        {"_id": ObjectId(student_id)},
-        {"$set": {"course": updated_course}}
+    new_course = data.get("course")
+    if not new_course:
+        raise HTTPException(status_code=400, detail="Course name is required")
+
+    result = await students_collection.update_one(
+        {"student_id": student_id},  # Use student_id instead of _id
+        {"$set": {"course": new_course}}
     )
-    
-    if result.modified_count:
-        return {"message": "Course updated successfully"}
-    return {"error": "Update failed"}   
 
-@app.post("/admin/promote_student/{student_id}")
-async def promote_student(student_id: str):
-    student = students_collection.find_one({"student_id": student_id})
-
-    if not student:
+    if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Student not found")
 
-    if student.get("result_score", 0) < 50:
-        raise HTTPException(status_code=400, detail="Student is not eligible for promotion")
+    return {"message": "Course updated successfully"}  
 
-    new_level = student.get("academic_level", 1) + 1  # Increment academic level
+@app.post("/admin/promote_student/{student_id}")
+async def promote_student(student_id: str, data: dict):
+    new_year = data.get("new_year")
 
-    students_collection.update_one(
-        {"student_id": student_id},
-        {"$set": {"academic_level": new_level, "promotion_status": "Promoted"}}
+    result = await db.students.update_one(
+        {"student_id": student_id},  # This may be causing the error
+        {"$set": {"academic_year": new_year}}
     )
 
-    return {"message": "Student promoted successfully", "new_level": new_level}
+    if result.matched_count == 0:
+        raise HTTPException(status_code=400, detail="Student not found")
+
+    return {"message": "Student promoted successfully"}
+
+
+@app.put("/admin/update_result/{student_id}")
+async def update_result(student_id: str, data: dict):
+    new_score = data.get("result_score")
+    if new_score is None:
+        raise HTTPException(status_code=400, detail="Result score is required")
+
+    result = await students_collection.update_one(
+        {"student_id": student_id},
+        {"$set": {"result_score": new_score}}
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    # Add notification
+    notification = {
+        "student_id": student_id,
+        "message": f"Your result has been updated to {new_score}.",
+        "timestamp": datetime.utcnow(),
+        "read": False
+    }
+    await notifications_collection.insert_one(notification)
+
+    return {"message": "Result score updated successfully"}
