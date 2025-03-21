@@ -1,7 +1,8 @@
 import smtplib
+from email.mime.text import MIMEText
 from bson import ObjectId
 from fastapi.responses import JSONResponse
-from fastapi import Request, FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel, EmailStr
 from motor.motor_asyncio import AsyncIOMotorClient
 from passlib.context import CryptContext
@@ -9,7 +10,6 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 import random
 import string
-from typing import Optional
 from fastapi import APIRouter
 from datetime import datetime
 
@@ -17,8 +17,10 @@ from datetime import datetime
 app = FastAPI()
 
 admin_router = APIRouter()
+student_router = APIRouter()
 
 app.include_router(admin_router, prefix="/admin")
+app.include_router(student_router, prefix="/student")
 
 # Enable CORS for frontend communication
 app.add_middleware(
@@ -37,6 +39,7 @@ try:
     client = AsyncIOMotorClient("mongodb://localhost:27017")
     db = client.studentERP
     admins_collection = db.admins
+    students_collection = db.students
     logging.info("✅ MongoDB connected successfully!")
 except Exception as e:
     logging.error(f"❌ MongoDB connection failed: {e}")
@@ -44,7 +47,13 @@ except Exception as e:
 # Password Hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# 🏫 Admin Models
+# SMTP Configuration
+SMTP_SERVER = "smtp.gmail.com"
+SMTP_PORT = 587
+SMTP_EMAIL = "balsarafrohan627@gmail.com"  # Replace with your email
+SMTP_PASSWORD = "zobi sxvl pjfv cneu"  # Replace with your email password
+
+# 🔹 Admin Models
 class AdminSignup(BaseModel):
     employee_id: str
     password: str
@@ -53,6 +62,21 @@ class AdminSignup(BaseModel):
 class AdminLogin(BaseModel):
     employee_id: str
     password: str
+
+# 🔹 Student Models
+class StudentAdmission(BaseModel):
+    name: str
+    email: EmailStr
+    phone: str
+    category: str  # OBC, SC, NT, ST, OPEN
+    allotment_number: str
+    department: str  # COM, AIDS, MECH, ENTC, CIVIL
+
+class StudentFormSubmission(BaseModel):
+    student_id: str
+    address: str
+    guardian_name: str
+    dob: str  # Format: YYYY-MM-DD
 
 # ✅ ADMIN: Signup API
 @app.post("/admin_signup")
@@ -85,6 +109,98 @@ async def admin_login(admin: AdminLogin):
 
     logging.info(f"✅ Admin Logged In: {admin.employee_id}")
     return {"status": "success", "message": "Admin login successful"}
+
+# 🔹 Generate a unique Student ID
+def generate_student_id():
+    return "STU" + ''.join(random.choices(string.digits, k=6))
+
+# 🔹 Generate a unique form link
+def generate_form_link(student_id):
+    return "http://127.0.0.1:5500"
+
+# 🔹 Send email to student
+def send_email(email: str, name: str, form_link: str):
+    try:
+        msg = MIMEText(f"Hello {name},\n\nPlease complete your admission form by clicking the link below:\n{form_link}\n\nThank you.")
+        msg["Subject"] = "Complete Your Admission Form"
+        msg["From"] = SMTP_EMAIL
+        msg["To"] = email
+
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_EMAIL, SMTP_PASSWORD)
+        server.sendmail(SMTP_EMAIL, email, msg.as_string())
+        server.quit()
+        
+        logging.info(f"📧 Email sent to {email}")
+        return True
+    except Exception as e:
+        logging.error(f"❌ Email sending failed: {e}")
+        return False
+
+# ✅ STUDENT: Admission API
+@app.post("/admit_student")
+async def admit_student(student: StudentAdmission):
+    student_id = generate_student_id()
+    scholarship_eligible = student.category.lower() != "open"
+    form_link = generate_form_link(student_id)
+
+    new_student = {
+        "student_id": student_id,
+        "name": student.name,
+        "email": student.email,
+        "phone": student.phone,
+        "category": student.category,
+        "scholarship_eligible": scholarship_eligible,
+        "allotment_number": student.allotment_number,
+        "year": "FE",
+        "department": student.department,
+        "form_link": form_link,
+        "form_completed": False,
+        "created_at": datetime.utcnow()
+    }
+
+    await students_collection.insert_one(new_student)
+
+    # Send email with form link
+    email_sent = send_email(student.email, student.name, form_link)
+    
+    if not email_sent:
+        return {"status": "error", "message": "Student admitted, but email failed to send"}
+
+    logging.info(f"✅ Student Admitted: {student.name} (ID: {student_id})")
+    return {"status": "success", "message": "Student admitted successfully", "student_id": student_id, "form_link": form_link}
+
+# ✅ STUDENT: Form Submission API
+@app.post("/submit_student_form")
+async def submit_student_form(student_form: StudentFormSubmission):
+    existing_student = await students_collection.find_one({"student_id": student_form.student_id})
+
+    if not existing_student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    await students_collection.update_one(
+        {"student_id": student_form.student_id},
+        {"$set": {
+            "address": student_form.address,
+            "guardian_name": student_form.guardian_name,
+            "dob": student_form.dob,
+            "form_completed": True
+        }}
+    )
+
+    logging.info(f"✅ Student Form Submitted: {student_form.student_id}")
+    return {"status": "success", "message": "Student form submitted successfully"}
+
+# ✅ STUDENT: Fetch Details API
+@app.get("/get_student_data/{student_id}")
+async def get_student_data(student_id: str):
+    student = await students_collection.find_one({"student_id": student_id}, {"_id": 0})
+    
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    return {"status": "success", "student": student}
 
 # ✅ TEST ROUTE
 @app.get("/test")
