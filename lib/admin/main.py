@@ -271,6 +271,47 @@ async def get_payment_details(student_id: str):
         "payment_details": payment
     }
 
+@app.get("/get_all_fees")
+async def get_all_fees():
+    students = await students_collection.find({}, {"_id": 0, "student_id": 1, "name": 1, "scholarship_eligible": 1}).to_list(length=None)
+
+    fees_data = []
+    for student in students:
+        total_fees = 96000
+        scholarship_amount = 43000 if student["scholarship_eligible"] else 0
+        payable_fees = total_fees - scholarship_amount
+
+        payment = await payments_collection.find_one({"student_id": student["student_id"]}, {"_id": 0})
+        amount_paid = payment["amount_paid"] if payment else 0
+        remaining_fees = payable_fees - amount_paid
+
+        fees_data.append({
+            "student_id": student["student_id"],
+            "name": student["name"],
+            "total_fees": payable_fees,
+            "amount_paid": amount_paid,
+            "remaining_fees": remaining_fees
+        })
+
+    return {"status": "success", "students": fees_data}
+
+@app.post("/send_fee_reminder")
+async def send_fee_reminder(data: dict):
+    student_id = data.get("student_id")
+    student = await students_collection.find_one({"student_id": student_id}, {"_id": 0, "email": 1, "name": 1})
+
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    email_sent = send_email(student["email"], student["name"], "Reminder: Pending Fees Payment")
+
+    if email_sent:
+        logging.info(f"📧 Reminder Email sent to {student['email']}")
+        return {"status": "success", "message": f"Fee reminder sent to {student['email']}"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to send email")
+
+
 # ✅ TEST ROUTE
 @app.get("/test")
 async def test_route():
