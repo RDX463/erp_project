@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'admin/admin_login.dart';
+import 'admin/admin_signup.dart';
 
 void main() {
   runApp(CollegeERPApp());
@@ -100,13 +102,21 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                   onSelected: (value) {
-                    print("Selected: $value");
-                    // You can navigate to different login pages here
+                    if (value == "StudentLogin") {
+                      // TODO: Add Student Login Page Navigation
+                    } else if (value == "FacultyLogin") {
+                      // TODO: Add Faculty Login Page Navigation
+                    } else if (value == "AdminLogin") {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => AdminLoginPage()),
+                      );
+                    } 
                   },
                   itemBuilder: (context) => [
-                    PopupMenuItem(value: "Student", child: Text("Student Login")),
-                    PopupMenuItem(value: "Faculty", child: Text("Faculty Login")),
-                    PopupMenuItem(value: "Admin", child: Text("Admin Login")),
+                    PopupMenuItem(value: "StudentLogin", child: Text("Student Login")),
+                    PopupMenuItem(value: "FacultyLogin", child: Text("Faculty Login")),
+                    PopupMenuItem(value: "AdminLogin", child: Text("Admin Login")),
                   ],
                 ),
 
