@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'student_fees_pay.dart'; // Import the new Fees Payment Page
 
 class StudentAdmissionPage extends StatefulWidget {
   const StudentAdmissionPage({super.key});
@@ -38,60 +39,59 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
   }
 
   void admitStudent() async {
-    if (nameController.text.isEmpty ||
-        emailController.text.isEmpty ||
-        phoneController.text.isEmpty ||
-        allotmentController.text.isEmpty) {
-      _showDialog("Error", "All fields are required.");
-      return;
-    }
-
-    generateStudentId();
-    checkScholarshipEligibility();
-
-    // Backend API URL
-    const String apiUrl = "http://localhost:5000/admit_student";
-
-    try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {"Content-Type": "application/json"},
-        body: json.encode({
-          "name": nameController.text,
-          "email": emailController.text,
-          "phone": phoneController.text,
-          "category": selectedCategory,
-          "allotment_number": allotmentController.text,
-          "department": selectedDepartment
-        }),
-      );
-
-      final responseBody = json.decode(response.body);
-
-      if (response.statusCode == 200) {
-        setState(() {
-          studentId = responseBody["student_id"];  // Set the student ID received from the backend
-        });
-
-        _showDialog("Success",
-            "Student Admitted Successfully!\n\n"
-            "Student ID: $studentId\n"
-            "Allotment Number: ${allotmentController.text}\n"
-            "Name: ${nameController.text}\n"
-            "Email: ${emailController.text}\n"
-            "Phone: ${phoneController.text}\n"
-            "Category: $selectedCategory\n"
-            "Scholarship: ${isScholarshipApplicable ? "Applicable" : "Not Applicable"}\n"
-            "Year: $admissionYear\n"
-            "Department: $selectedDepartment\n\n"
-            "A form link has been sent to ${emailController.text} for further details.");
-      } else {
-        _showDialog("Error", responseBody["message"] ?? "Failed to admit student.");
-      }
-    } catch (e) {
-      _showDialog("Error", "Network error! Please try again.");
-    }
+  if (nameController.text.isEmpty ||
+      emailController.text.isEmpty ||
+      phoneController.text.isEmpty ||
+      allotmentController.text.isEmpty) {
+    _showDialog("Error", "All fields are required.");
+    return;
   }
+
+  generateStudentId();
+  checkScholarshipEligibility();
+
+  // Backend API URL
+  const String apiUrl = "http://localhost:5000/admit_student";
+
+  try {
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: {"Content-Type": "application/json"},
+      body: json.encode({
+        "name": nameController.text,
+        "email": emailController.text,
+        "phone": phoneController.text,
+        "category": selectedCategory,
+        "allotment_number": allotmentController.text,
+        "department": selectedDepartment
+      }),
+    );
+
+    final responseBody = json.decode(response.body);
+
+    if (response.statusCode == 200) {
+      setState(() {
+        studentId = responseBody["student_id"];  
+      });
+
+      // Navigate to Student Fees Payment Page after admission success
+      Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => StudentFeesPayPage(
+      studentId: studentId,
+      isScholarshipApplicable: isScholarshipApplicable,  // Pass scholarship status
+    ),
+  ),
+);
+
+    } else {
+      _showDialog("Error", responseBody["message"] ?? "Failed to admit student.");
+    }
+  } catch (e) {
+    _showDialog("Error", "Network error! Please try again.");
+  }
+}
 
   void _showDialog(String title, String message) {
     showDialog(
