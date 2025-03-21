@@ -17,12 +17,22 @@ class StudentFeesPayPage extends StatefulWidget {
 }
 
 class _StudentFeesPayPageState extends State<StudentFeesPayPage> {
+  final TextEditingController _amountController = TextEditingController();
   bool isPaymentSuccessful = false;
 
   void processPayment() async {
     const int totalFees = 96000;
     const int scholarshipAmount = 43000;
     int payableFees = widget.isScholarshipApplicable ? (totalFees - scholarshipAmount) : totalFees;
+
+    // Convert user input to integer
+    int enteredAmount = int.tryParse(_amountController.text) ?? 0;
+
+    // Validation: Ensure entered amount is within allowed range
+    if (enteredAmount <= 0 || enteredAmount > payableFees) {
+      _showDialog("Invalid Amount", "Please enter a valid amount up to ₹$payableFees.");
+      return;
+    }
 
     const String apiUrl = "http://localhost:5000/pay_fees";
 
@@ -32,7 +42,7 @@ class _StudentFeesPayPageState extends State<StudentFeesPayPage> {
         headers: {"Content-Type": "application/json"},
         body: json.encode({
           "student_id": widget.studentId,
-          "payable_fees": payableFees,
+          "amount_paid": enteredAmount,
           "status": "Paid",
         }),
       );
@@ -44,7 +54,7 @@ class _StudentFeesPayPageState extends State<StudentFeesPayPage> {
           isPaymentSuccessful = true;
         });
 
-        _showDialog("Payment Successful", "Fees payment of ₹$payableFees has been completed.");
+        _showDialog("Payment Successful", "Fees payment of ₹$enteredAmount has been completed.");
       } else {
         _showDialog("Payment Failed", responseBody["message"] ?? "Something went wrong!");
       }
@@ -112,6 +122,16 @@ class _StudentFeesPayPageState extends State<StudentFeesPayPage> {
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green),
             ),
             const SizedBox(height: 30),
+            TextField(
+              controller: _amountController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: "Enter amount to pay",
+                border: OutlineInputBorder(),
+                prefixText: "₹",
+              ),
+            ),
+            const SizedBox(height: 20),
             Center(
               child: ElevatedButton(
                 onPressed: processPayment,

@@ -51,6 +51,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # 🔹 Student Fees Model
 class StudentFeesPayment(BaseModel):
     student_id: str
+    amount_paid: int
 
 # SMTP Configuration
 SMTP_SERVER = "smtp.gmail.com"
@@ -207,7 +208,6 @@ async def get_student_data(student_id: str):
 
     return {"status": "success", "student": student}
 
-# ✅ STUDENT: Fees Payment API
 @app.post("/pay_fees")
 async def pay_fees(fees_data: StudentFeesPayment):
     student = await students_collection.find_one({"student_id": fees_data.student_id})
@@ -216,34 +216,60 @@ async def pay_fees(fees_data: StudentFeesPayment):
         raise HTTPException(status_code=404, detail="Student not found")
 
     total_fees = 96000
-    scholarship_amount = 43000
-    is_scholarship = student.get("scholarship_eligible", False)
-    payable_fees = total_fees - scholarship_amount if is_scholarship else total_fees
+    scholarship_amount = 43000 if student.get("scholarship_eligible", False) else 0
+    payable_fees = total_fees - scholarship_amount
 
-    # Save payment record in the database
-    payment_record = {
-        "student_id": fees_data.student_id,
-        "amount_paid": payable_fees,
-        "status": "Paid",
-        "timestamp": datetime.utcnow()
+    # Fetch existing payment details
+    existing_payment = await payments_collection.find_one({"student_id": fees_data.student_id})
+
+    # Calculate amounts
+    already_paid = existing_payment["amount_paid"] if existing_payment else 0
+    new_total_paid = already_paid + fees_data.amount_paid
+    remaining_fees = max(0, payable_fees - new_total_paid)
+
+    # Ensure payment does not exceed payable fees
+    if new_total_paid > payable_fees:
+        raise HTTPException(status_code=400, detail=f"Payment exceeds total fees. Remaining balance: ₹{payable_fees - already_paid}")
+
+    # Update or insert payment record
+    if existing_payment:
+        await payments_collection.update_one(
+            {"student_id": fees_data.student_id},
+            {"$set": {
+                "amount_paid": new_total_paid,
+                "remaining_fees": remaining_fees,
+                "last_payment_date": datetime.utcnow()
+            }}
+        )
+    else:
+        await payments_collection.insert_one({
+            "student_id": fees_data.student_id,
+            "amount_paid": fees_data.amount_paid,
+            "remaining_fees": remaining_fees,
+            "last_payment_date": datetime.utcnow()
+        })
+
+    logging.info(f"✅ Fees Paid: {fees_data.student_id} | Paid: ₹{fees_data.amount_paid} | Remaining: ₹{remaining_fees}")
+
+    return {
+        "status": "success",
+        "message": f"Payment of ₹{fees_data.amount_paid} received.",
+        "total_paid": new_total_paid,
+        "remaining_fees": remaining_fees
     }
 
-    await payments_collection.insert_one(payment_record)
-
-    logging.info(f"✅ Fees Paid for Student ID: {fees_data.student_id}, Amount: ₹{payable_fees}")
-    
-    return {"status": "success", "message": f"Fees payment of ₹{payable_fees} completed", "amount_paid": payable_fees}
-
-# ✅ STUDENT: Fetch Payment Status API
-@app.get("/get_payment_status/{student_id}")
-async def get_payment_status(student_id: str):
+# ✅ STUDENT: Fetch Payment Details API
+@app.get("/get_payment_details/{student_id}")
+async def get_payment_details(student_id: str):
     payment = await payments_collection.find_one({"student_id": student_id}, {"_id": 0})
 
     if not payment:
-        return {"status": "pending", "message": "No payment record found"}
+        raise HTTPException(status_code=404, detail="No payment record found for this student.")
 
-    return {"status": "success", "payment_details": payment}
-
+    return {
+        "status": "success",
+        "payment_details": payment
+    }
 
 # ✅ TEST ROUTE
 @app.get("/test")
