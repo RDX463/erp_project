@@ -135,3 +135,39 @@ Future<void> updateStudentDetails(String studentId, String name, String phone) a
   }
 }
 }
+
+Future<void> fetchStudents() async {
+  final response = await http.get(Uri.parse("http://localhost:5000/admin/students"));
+
+  if (response.statusCode == 200) {
+    final List<dynamic> students = jsonDecode(response.body);
+    print(students);
+  } else {
+    throw Exception("Failed to load student data");
+  }
+}
+
+// Function to promote student and save in database
+Future<void> promoteStudent(String studentId, Map<String, dynamic> student) async {
+  final url = 'http://localhost:5000/admin/promote_student/$studentId';
+
+  try {
+    final response = await http.post(Uri.parse(url));
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      int newLevel = data["new_level"];
+
+      setState(() {
+        student["academic_level"] = newLevel;
+        student["promotion_status"] = "Promoted";
+      });
+
+      print("Student promoted to level $newLevel");
+    } else {
+      print("Failed to promote student: ${response.body}");
+    }
+  } catch (e) {
+    print("Error promoting student: $e");
+  }
+}

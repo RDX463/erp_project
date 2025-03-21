@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'admin_admission_page.dart';
 import 'fees_page.dart';
+import 'admin_students_page.dart'; // Import Student Details Page
 
 class AdminDashboard extends StatefulWidget {
   @override
@@ -47,7 +48,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
             SizedBox(height: 30),
 
-            // Admit Student Button
+            // 📌 Admit Student Button
             Center(
               child: SizedBox(
                 width: double.infinity,
@@ -55,7 +56,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   icon: Icon(Icons.person_add, size: 28),
                   label: Text(
                     "Admit New Student",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold ,color:Colors.white),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green.shade600,
@@ -78,7 +79,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
             SizedBox(height: 30),
 
-            // Fees Management Card
+            // 📌 Fees Management Section
             Card(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(15),
@@ -102,6 +103,35 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       content: Text("Please go to Admission Page first!"),
                       behavior: SnackBarBehavior.floating,
                     ),
+                  );
+                },
+              ),
+            ),
+
+            SizedBox(height: 20),
+
+            // 📌 Student Details Section
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              elevation: 8,
+              shadowColor: Colors.black38,
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Colors.blue.shade200,
+                  child: Icon(Icons.group, color: Colors.blue.shade800),
+                ),
+                title: Text(
+                  "Student Details",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+                subtitle: Text("View all registered students in a table."),
+                trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AdminStudentsPage()),
                   );
                 },
               ),

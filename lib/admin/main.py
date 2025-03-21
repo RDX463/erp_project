@@ -10,9 +10,14 @@ import logging
 import random
 import string
 from typing import Optional
+from fastapi import APIRouter
 
 # Initialize FastAPI
 app = FastAPI()
+
+admin_router = APIRouter()
+
+app.include_router(admin_router, prefix="/admin")
 
 # Enable CORS for frontend communication
 app.add_middleware(
@@ -127,7 +132,10 @@ async def admit_student(student: StudentAdmission):
 # ✅ STUDENT: Get Admitted Student Details (For Student Login Verification)
 @app.get("/get_admitted_student/{email}")
 async def get_admitted_student(email: str):
-    student = await students_collection.find_one({"email": email}, {"_id": 0})
+    student = await students_collection.find_one(
+        {"email": email},
+        {"_id": 0, "password": 0}  # Exclude MongoDB ID & password
+    )
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
     
@@ -136,7 +144,10 @@ async def get_admitted_student(email: str):
 # ✅ STUDENT: Get Fees Details
 @app.get("/student/get-fees/{student_id}")
 async def get_fees(student_id: str):
-    student = await students_collection.find_one({"student_id": student_id}, {"_id": 0})
+    student = await students_collection.find_one(
+        {"student_id": student_id},
+        {"_id": 0, "password": 0}  # Exclude MongoDB ID & password
+    )
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
 
@@ -171,8 +182,54 @@ async def pay_fees(payment: FeePayment):
         "paid_fees": new_paid_fees,
         "remaining_fees": remaining_fees
     }
+    
+@app.get("/admin/students")
+async def get_students():
+    try:
+        students = await students_collection.find({}, {"_id": 0, "password": 0}).to_list(length=None)
+        if not students:
+            raise HTTPException(status_code=404, detail="No students found")
+        return students
+    except Exception as e:
+        logging.error(f"❌ Error fetching students: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
 
 # ✅ TEST ROUTE
 @app.get("/test")
 async def test_route():
     return {"status": "success", "message": "API is working!"}
+
+@app.put("/admin/update_course/{student_id}")
+async def update_course(student_id: str, data: dict):
+    updated_course = data.get("course")
+    if not updated_course:
+        return {"error": "Course is required"}
+    
+    result = students_collection.update_one(
+        {"_id": ObjectId(student_id)},
+        {"$set": {"course": updated_course}}
+    )
+    
+    if result.modified_count:
+        return {"message": "Course updated successfully"}
+    return {"error": "Update failed"}   
+
+@app.post("/admin/promote_student/{student_id}")
+async def promote_student(student_id: str):
+    student = students_collection.find_one({"student_id": student_id})
+
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    if student.get("result_score", 0) < 50:
+        raise HTTPException(status_code=400, detail="Student is not eligible for promotion")
+
+    new_level = student.get("academic_level", 1) + 1  # Increment academic level
+
+    students_collection.update_one(
+        {"student_id": student_id},
+        {"$set": {"academic_level": new_level, "promotion_status": "Promoted"}}
+    )
+
+    return {"message": "Student promoted successfully", "new_level": new_level}
