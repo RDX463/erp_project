@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart'; // Import url_launcher
+import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // Import Font Awesome
 import 'admin/admin_login.dart';
 
 void main() {
@@ -12,15 +15,32 @@ class CollegeERPApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Open Sans',
-        primaryColor: Color(0xFF004AAD),
-        secondaryHeaderColor: Color(0xFFFFFFFF),
+        primaryColor: Color(0xFF00796B), // Dark teal
+        secondaryHeaderColor: Color(0xFFFF6F61), // Coral
         colorScheme: ColorScheme.fromSwatch().copyWith(
-          secondary: Color(0xFFFFD700),
-          background: Color(0xFFF5F5F5),
+          primary: Color(0xFF00796B), // Primary color (Teal)
+          secondary: Color(0xFFFF6F61), // Secondary color (Coral)
+          background: Color(0xFFE0F7FA), // Light teal background
+          surface: Color(0xFFFFFFFF), // Surface color
           onPrimary: Colors.white,
           onSecondary: Colors.black,
-          primary: Color(0xFF004AAD),
-          surface: Color(0xFFFFFFFF),
+          onBackground: Colors.black,
+          onSurface: Colors.black,
+        ),
+        textTheme: TextTheme(
+          displayLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
+          bodyLarge: TextStyle(fontSize: 16, color: Colors.black87),
+          bodyMedium: TextStyle(fontSize: 14, color: Colors.black54),
+        ),
+        buttonTheme: ButtonThemeData(
+          buttonColor: Color(0xFF00796B), // Button color (Teal)
+          textTheme: ButtonTextTheme.primary,
+        ),
+        cardTheme: CardTheme(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 4,
         ),
       ),
       home: HomePage(),
@@ -69,52 +89,50 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(55),
+        preferredSize: Size.fromHeight(56), // Height for the AppBar
         child: AppBar(
-          backgroundColor: Colors.black, // Changed to black
+          backgroundColor: Theme.of(context).primaryColor, // Dark teal
           elevation: 4,
           titleSpacing: 0,
           title: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween, // Distribute space evenly
             children: [
               Padding(
-                padding: const EdgeInsets.only(left: 20.0, right: 15.0),
-                child: Container(
-                  color: Colors.black, // Logo background color
-                  child: Image.asset(
-                    'assets/logo.jpeg',
-                    height: 65,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        height: 60,
-                        width: 150,
-                        color: Colors.red.shade100,
-                        alignment: Alignment.center,
-                        padding: EdgeInsets.all(4),
-                        child: Text(
-                          "Error\nLoading Logo\nCheck Console",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.red.shade900, fontSize: 10),
-                        ),
-                      );
-                    },
-                  ),
+                padding: const EdgeInsets.only(left: 20.0), // Adjusted left padding
+                child: Row(
+                  children: [
+                    Container(
+                      color: Colors.black, // Logo background color
+                      child: Image.asset(
+                        'assets/logo.jpg',
+                        height: 70, // Logo height
+                        fit: BoxFit.contain, // Adjusted fit property
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            height: 70,
+                            width: 150,
+                            color: Colors.red.shade100,
+                            alignment: Alignment.center,
+                            padding: EdgeInsets.all(4),
+                            child: Text(
+                              "Error\nLoading Logo\nCheck Console",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.red.shade900, fontSize: 10),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    SizedBox(width: 10), // Space between logo and DTE code
+                    Text(
+                      "DTE Code: EN6732",
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white, // DTE code color
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    "Ajeenkya DY Patil School Of Engineering",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                  Text(
-                    "Lohegaon, Pune - 412105",
-                    style: TextStyle(fontSize: 12, color: Colors.white),
-                  ),
-                ],
               ),
               Spacer(),
               Padding(
@@ -139,6 +157,7 @@ class _HomePageState extends State<HomePage> {
       body: Column(
         children: [
           _buildEventSection(),
+          _buildSocialMediaLinks(), // Add social media links here
         ],
       ),
     );
@@ -155,7 +174,7 @@ class _HomePageState extends State<HomePage> {
               padding: const EdgeInsets.only(left: 8.0, bottom: 6.0),
               child: Text(
                 "📢 Latest Notices & Events",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.black87.withOpacity(0.9)),
+                style: Theme.of(context).textTheme.displayLarge,
               ),
             ),
             SizedBox(height: 8),
@@ -184,8 +203,6 @@ class _HomePageState extends State<HomePage> {
         ).chain(CurveTween(curve: Curves.easeOutCubic))),
         child: Card(
           margin: EdgeInsets.symmetric(vertical: 7, horizontal: 5),
-          elevation: 3,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Padding(
             padding: EdgeInsets.all(14.0),
             child: Row(
@@ -195,7 +212,7 @@ class _HomePageState extends State<HomePage> {
                 Expanded(
                   child: Text(
                     event,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.black),
+                    style: Theme.of(context).textTheme.bodyLarge,
                   ),
                 ),
               ],
@@ -250,26 +267,56 @@ class _HomePageState extends State<HomePage> {
       onSelected: (value) {
         switch (value) {
           case "AdminLogin":
-            Navigator.pushNamed(context, '/admin_login');
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => AdminLoginPage()),
+            );
             break;
           // Handle other logins
         }
       },
     );
   }
-}
 
-// Sample Admin Login Page
-class AdminLoginPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Admin Login"),
-      ),
-      body: Center(
-        child: Text("Admin Login Page"),
+  // Build social media links
+  Widget _buildSocialMediaLinks() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: FaIcon(FontAwesomeIcons.facebook, color: Theme.of(context).primaryColor),
+                onPressed: () => _launchURL('https://www.facebook.com/'),
+              ),
+              IconButton(
+                icon: FaIcon(FontAwesomeIcons.twitter, color: Theme.of(context).primaryColor),
+                onPressed: () => _launchURL('https://twitter.com/'),
+              ),
+              IconButton(
+                icon: FaIcon(FontAwesomeIcons.linkedin, color: Theme.of(context).primaryColor),
+                onPressed: () => _launchURL('https://www.linkedin.com/'),
+              ),
+              IconButton(
+                icon: FaIcon(FontAwesomeIcons.youtube, color: Theme.of(context).primaryColor),
+                onPressed: () => _launchURL('https://www.youtube.com/'),
+              ),
+            ],
+          ),
+          SizedBox(height: 10),
+        ],
       ),
     );
+  }
+
+  // Function to launch URL
+  void _launchURL(String url) async {
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      throw 'Could not launch $url';
+    }
   }
 }
