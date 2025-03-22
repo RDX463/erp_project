@@ -1,7 +1,7 @@
 import smtplib
 from email.mime.text import MIMEText
-from bson import ObjectId
 from fastapi.responses import JSONResponse
+from bson import ObjectId
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel, EmailStr
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -83,6 +83,10 @@ class StudentFormSubmission(BaseModel):
     address: str
     guardian_name: str
     dob: str  # Format: YYYY-MM-DD
+    
+# 🔹 Student Scholarship Model
+class ScholarshipNotification(BaseModel):
+    student_id: str
 
 # ✅ ADMIN: Signup API
 @app.post("/admin_signup")
@@ -310,7 +314,66 @@ async def send_fee_reminder(data: dict):
         return {"status": "success", "message": f"Fee reminder sent to {student['email']}"}
     else:
         raise HTTPException(status_code=500, detail="Failed to send email")
+    
+# ✅ Fetch Students Eligible for Scholarships
+@app.get("/get_scholarship_students")
+async def get_scholarship_students():
+    try:
+        students = await students_collection.find(
+            {"category": {"$ne": "OPEN"}},
+            {"_id": 0, "student_id": 1, "name": 1, "department": 1, "email": 1, "form_completed": 1,"year":1}
+        ).to_list(length=None)
 
+        # Fetch payment details for each student
+        for student in students:
+            payment = await payments_collection.find_one({"student_id": student["student_id"]}, {"_id": 0})
+            student["total_fees"] = 96000 - (43000 if student.get("scholarship_eligible", False) else 0)
+            student["amount_paid"] = payment["amount_paid"] if payment else 0
+            student["remaining_fees"] = student["total_fees"] - student["amount_paid"]
+
+        return JSONResponse(content={"status": "success", "students": students}, status_code=200)
+    
+    except Exception as e:
+        logging.error(f"❌ Error fetching scholarship students: {e}")
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
+
+# 🔹 Send Scholarship Form Notification Email
+def send_scholarship_email(email: str, name: str):
+    try:
+        msg = MIMEText(f"Hello {name},\n\nPlease submit your scholarship form as soon as possible.\n\nThank you.")
+        msg["Subject"] = "Reminder: Scholarship Form Submission"
+        msg["From"] = SMTP_EMAIL
+        msg["To"] = email
+
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_EMAIL, SMTP_PASSWORD)
+        server.sendmail(SMTP_EMAIL, email, msg.as_string())
+        server.quit()
+
+        logging.info(f"📧 Scholarship form reminder sent to {email}")
+        return True
+    except Exception as e:
+        logging.error(f"❌ Scholarship email sending failed: {e}")
+        return False
+
+# ✅ Notify Students for Scholarship Form Submission
+@app.post("/notify_scholarship_student")
+async def notify_scholarship_student(data: ScholarshipNotification):
+    student = await students_collection.find_one({"student_id": data.student_id})
+
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    if student.get("form_completed", False):
+        return {"status": "info", "message": "Scholarship form already submitted"}
+
+    email_sent = send_scholarship_email(student["email"], student["name"])
+
+    if email_sent:
+        return {"status": "success", "message": f"Scholarship form reminder sent to {student['email']}"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to send email")
 
 # ✅ TEST ROUTE
 @app.get("/test")
