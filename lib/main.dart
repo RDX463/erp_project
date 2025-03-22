@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart'; // Import url_launcher
 import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // Import Font Awesome
+import 'package:flutter_swiper_view/flutter_swiper_view.dart'; // Import flutter_swiper_view
 import 'admin/admin_login.dart';
 
 void main() {
@@ -57,7 +58,7 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   final List<String> events = [
     "🔔 Campus Placement Drive on March 30th!",
     "📢 Semester Exams Begin from April 15th.",
@@ -68,9 +69,25 @@ class _HomePageState extends State<HomePage> {
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   List<String> displayedEvents = [];
 
+  // Sample images for the photo gallery
+  final List<String> galleryImages = [
+    'assets/image1.jpeg',
+    'assets/image2.jpeg',
+    'assets/image3.jpeg',
+    'assets/image4.jpeg',
+    'assets/image5.jpeg',
+  ];
+
+  late AnimationController _animationController;
+
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 2000),
+    );
+    _animationController.forward();
     _addEventsWithAnimation();
   }
 
@@ -82,6 +99,12 @@ class _HomePageState extends State<HomePage> {
         _listKey.currentState?.insertItem(displayedEvents.length - 1);
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   @override
@@ -154,41 +177,44 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-      body: Column(
-        children: [
-          _buildEventSection(),
-          _buildSocialMediaLinks(), // Add social media links here
-        ],
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildEventSection(),
+            _buildPhotoGallery(), // Add photo gallery here
+            _buildDepartmentsSection(), // Add departments section here
+            _buildSocialMediaLinks(), // Add social media links here
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildEventSection() {
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 8.0, bottom: 6.0),
-              child: Text(
-                "📢 Latest Notices & Events",
-                style: Theme.of(context).textTheme.displayLarge,
-              ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 8.0, bottom: 6.0),
+            child: Text(
+              "📢 Latest Notices & Events",
+              style: Theme.of(context).textTheme.displayLarge,
             ),
-            SizedBox(height: 8),
-            Expanded(
-              child: AnimatedList(
-                key: _listKey,
-                initialItemCount: displayedEvents.length,
-                itemBuilder: (context, index, animation) {
-                  return _buildAnimatedItem(displayedEvents[index], animation);
-                },
-              ),
-            ),
-          ],
-        ),
+          ),
+          SizedBox(height: 8),
+          // Use a Column to display the events
+          AnimatedList(
+            key: _listKey,
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            initialItemCount: displayedEvents.length,
+            itemBuilder: (context, index, animation) {
+              return _buildAnimatedItem(displayedEvents[index], animation);
+            },
+          ),
+        ],
       ),
     );
   }
@@ -218,6 +244,75 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhotoGallery() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "📸 Photo Gallery",
+            style: Theme.of(context).textTheme.displayLarge,
+          ),
+          SizedBox(height: 8),
+          Container(
+            height: 200, // Give the Swiper a bounded height
+            child: Swiper(
+              itemBuilder: (BuildContext context, int index) {
+                return Image.asset(
+                  galleryImages[index],
+                  fit: BoxFit.cover,
+                );
+              },
+              itemCount: galleryImages.length,
+              pagination: SwiperPagination(),
+              control: SwiperControl(),
+              autoplay: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDepartmentsSection() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "🏫 Engineering Departments",
+            style: Theme.of(context).textTheme.displayLarge,
+          ),
+          SizedBox(height: 8),
+          Column(
+            children: [
+              _departmentCard("Computer Science Engineering"),
+              _departmentCard("Mechanical Engineering"),
+              _departmentCard("Civil Engineering"),
+              _departmentCard("Electrical Engineering"),
+              _departmentCard("Electronics and Communication Engineering"),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _departmentCard(String departmentName) {
+    return Card(
+      margin: EdgeInsets.symmetric(vertical: 5),
+      child: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Text(
+          departmentName,
+          style: Theme.of(context).textTheme.bodyLarge,
         ),
       ),
     );
