@@ -13,7 +13,10 @@ class ScholarshipEligibilityPage extends StatefulWidget {
 class _ScholarshipEligibilityPageState
     extends State<ScholarshipEligibilityPage> {
   List<Map<String, dynamic>> students = [];
+  List<Map<String, dynamic>> filteredStudents = [];
   bool _isLoading = true;
+  String selectedDepartment = "All";
+  List<String> departments = ["All", "COM", "AIDS", "MECH", "ENTC", "CIVIL"];
 
   @override
   void initState() {
@@ -21,54 +24,56 @@ class _ScholarshipEligibilityPageState
     _fetchScholarshipStudents();
   }
 
-  // Fetch all students eligible for scholarships
   Future<void> _fetchScholarshipStudents() async {
-  const url = 'http://localhost:5000/get_scholarship_students';
+    const url = 'http://localhost:5000/get_scholarship_students';
 
-  try {
-    final response = await http.get(Uri.parse(url));
+    try {
+      final response = await http.get(Uri.parse(url));
+      final jsonData = json.decode(response.body);
 
-    print("Response Status: ${response.statusCode}");
-    print("Raw Response Body: ${response.body}");
-
-    final jsonData = json.decode(response.body);
-
-    print("Decoded JSON Data: $jsonData");
-    print("Data Type: ${jsonData.runtimeType}");
-
-    if (jsonData is Map && jsonData['status'] == 'success') {
-      final List<dynamic> studentList = jsonData['students'] ?? [];
+      if (jsonData is Map && jsonData['status'] == 'success') {
+        final List<dynamic> studentList = jsonData['students'] ?? [];
+        setState(() {
+          students = studentList.map<Map<String, dynamic>>((student) {
+            return {
+              "student_id": student["student_id"]?.toString() ?? "N/A",
+              "name": student["name"] ?? "Unknown",
+              "email": student["email"] ?? "No Email",
+              "department": student["department"] ?? "No Dept",
+              "year": (student["year"] ?? 0).toString(),
+              "form_submitted": student["form_completed"] ?? false,
+              "marks": student["marks"] ?? 0,
+              "total_fees": student["total_fees"] ?? 0,
+              "amount_paid": student["amount_paid"] ?? 0,
+              "remaining_fees": student["remaining_fees"] ?? 0,
+            };
+          }).toList();
+          _filterStudents();
+          _isLoading = false;
+        });
+      } else {
+        throw Exception("Unexpected data format");
+      }
+    } catch (e) {
       setState(() {
-        students = studentList.map<Map<String, dynamic>>((student) {
-          return {
-            "student_id": student["student_id"]?.toString() ?? "N/A",
-            "name": student["name"] ?? "Unknown",
-            "email": student["email"] ?? "No Email",
-            "department": student["department"] ?? "No Dept",
-            "year": (student["year"] ?? 0).toString(), // Ensure 'year' is never null
-            "form_submitted": student["form_completed"] ?? false,
-            "marks": student["marks"] ?? 0, // Default to 0
-            "total_fees": student["total_fees"] ?? 0, // Default to 0
-            "amount_paid": student["amount_paid"] ?? 0, // Default to 0
-            "remaining_fees": student["remaining_fees"] ?? 0, // Default to 0
-          };
-        }).toList();
-        print("Students List: $students"); // Debug print
         _isLoading = false;
       });
-    } else {
-      throw Exception("Unexpected data format");
+      _showErrorDialog("Error fetching data. Please check your connection.");
     }
-  } catch (e) {
-    print("Error: $e");
-    setState(() {
-      _isLoading = false;
-    });
-    _showErrorDialog("Error fetching data. Please check your connection.");
   }
-}
 
-  // Send fee reminder email
+  void _filterStudents() {
+    setState(() {
+      if (selectedDepartment == "All") {
+        filteredStudents = students;
+      } else {
+        filteredStudents = students
+            .where((student) => student["department"] == selectedDepartment)
+            .toList();
+      }
+    });
+  }
+
   Future<void> _sendFeeReminder(String studentId) async {
     const url = 'http://localhost:5000/send_fee_reminder';
 
@@ -89,7 +94,6 @@ class _ScholarshipEligibilityPageState
     }
   }
 
-  // Show error dialog
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
@@ -100,8 +104,7 @@ class _ScholarshipEligibilityPageState
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text("OK",
-                  style: TextStyle(color: Colors.blueAccent)),
+              child: const Text("OK", style: TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -109,7 +112,6 @@ class _ScholarshipEligibilityPageState
     );
   }
 
-  // Show success dialog
   void _showSuccessDialog(String message) {
     showDialog(
       context: context,
@@ -120,8 +122,7 @@ class _ScholarshipEligibilityPageState
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text("OK",
-                  style: TextStyle(color: Colors.green)),
+              child: const Text("OK", style: TextStyle(color: Colors.green)),
             ),
           ],
         );
@@ -137,6 +138,7 @@ class _ScholarshipEligibilityPageState
         title: const Text("Scholarship Eligibility"),
         backgroundColor: Colors.blueAccent,
         centerTitle: true,
+        elevation: 4,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -147,51 +149,104 @@ class _ScholarshipEligibilityPageState
                   const Text(
                     "Eligible Students",
                     style: TextStyle(
-                        fontSize: 22, fontWeight: FontWeight.bold),
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blueGrey,
+                    ),
                   ),
                   const SizedBox(height: 10),
+
+                  // Modern Dropdown
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 5,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: DropdownButtonFormField<String>(
+                      value: selectedDepartment,
+                      decoration: const InputDecoration(
+                        labelText: "Filter by Department",
+                        border: InputBorder.none,
+                      ),
+                      items: departments.map((String department) {
+                        return DropdownMenuItem<String>(
+                          value: department,
+                          child: Text(department),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            selectedDepartment = newValue;
+                            _filterStudents();
+                          });
+                        }
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // Student List in Card View
                   Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: DataTable(
-                        columnSpacing: 16.0,
-                        columns: const [
-                          DataColumn(label: Text("Student ID")),
-                          DataColumn(label: Text("Name")),
-                          DataColumn(label: Text("Email")),
-                          DataColumn(label: Text("Department")),
-                          DataColumn(label: Text("Year")),
-                          DataColumn(label: Text("Total Fees")),
-                          DataColumn(label: Text("Amount Paid")),
-                          DataColumn(label: Text("Remaining Fees")),
-                          DataColumn(label: Text("Action")),
-                        ],
-                        rows: students.map((student) {
-                          return DataRow(cells: [
-                            DataCell(Text(student["student_id"])),
-                            DataCell(Text(student["name"])),
-                            DataCell(Text(student["email"])),
-                            DataCell(Text(student["department"])),
-                            DataCell(Text(student["year"].toString())),
-                            DataCell(Text("₹${student["total_fees"] ?? 0}")),
-                            DataCell(Text("₹${student["amount_paid"] ?? 0}")),
-                            DataCell(Text("₹${student["remaining_fees"] ?? 0}")),
-                            DataCell(
-                              ElevatedButton(
-                                onPressed: (student["remaining_fees"] ?? 0) > 0
-                                    ? () => _sendFeeReminder(student["student_id"])
-                                    : null,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: (student["remaining_fees"] ?? 0) > 0
-                                      ? Colors.blue
-                                      : Colors.grey,
-                                ),
-                                child: const Text("Send Reminder"),
+                    child: ListView.builder(
+                      itemCount: filteredStudents.length,
+                      itemBuilder: (context, index) {
+                        final student = filteredStudents[index];
+                        return Card(
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 3,
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.all(16),
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.blueAccent,
+                              child: Text(
+                                student["name"][0],
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 18),
                               ),
                             ),
-                          ]);
-                        }).toList(),
-                      ),
+                            title: Text(
+                              student["name"],
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 18),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Dept: ${student["department"]}"),
+                                Text("Year: ${student["year"]}"),
+                                Text("Remaining Fees: ₹${student["remaining_fees"]}"),
+                              ],
+                            ),
+                            trailing: ElevatedButton(
+                              onPressed: (student["remaining_fees"] ?? 0) > 0
+                                  ? () => _sendFeeReminder(student["student_id"])
+                                  : null,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: (student["remaining_fees"] ?? 0) > 0
+                                    ? Colors.blue
+                                    : Colors.grey,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text("Send Reminder"),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],
