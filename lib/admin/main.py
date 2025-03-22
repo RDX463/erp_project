@@ -1,5 +1,6 @@
 import smtplib
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from fastapi.responses import JSONResponse
 from bson import ObjectId
 from fastapi import FastAPI, HTTPException, Depends
@@ -374,6 +375,81 @@ async def notify_scholarship_student(data: ScholarshipNotification):
         return {"status": "success", "message": f"Scholarship form reminder sent to {student['email']}"}
     else:
         raise HTTPException(status_code=500, detail="Failed to send email")
+    
+# 🔹 Email Sending Function
+def send_email(to_email, subject, message):
+    try:
+        msg = MIMEMultipart()
+        msg["From"] = SMTP_EMAIL
+        msg["To"] = to_email
+        msg["Subject"] = subject
+        msg.attach(MIMEText(message, "plain"))
+
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_EMAIL, SMTP_PASSWORD)
+        server.sendmail(SMTP_EMAIL, to_email, msg.as_string())
+        server.quit()
+        return True
+    except Exception as e:
+        logging.error(f"❌ Email sending failed: {e}")
+        return False
+
+# 🔹 Student Promotion Model
+class StudentPromotion(BaseModel):
+    student_id: str
+    new_year: str  # SE, TE, BE
+
+# ✅ API: Get Student Promotion Details
+@app.get("/get_student_promotion")
+async def get_student_promotion():
+    try:
+        students = await students_collection.find({}, {"_id": 0, "student_id": 1, "name": 1, "email": 1, "year": 1, "result_updated": 1,"department":1}).to_list(length=None)
+
+        return JSONResponse(content={"status": "success", "students": students}, status_code=200)
+
+    except Exception as e:
+        logging.error(f"❌ Error fetching student promotion details: {e}")
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
+
+# ✅ API: Send Result Update Reminder Email
+@app.post("/send_result_reminder")
+async def send_result_reminder(data: dict):
+    student_id = data.get("student_id")
+    student = await students_collection.find_one({"student_id": student_id}, {"_id": 0, "email": 1, "name": 1, "result_updated": 1})
+
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    if student.get("result_updated", False):
+        return {"status": "info", "message": "Result already updated"}
+
+    email_sent = send_email(student["email"], "Result Update Reminder", f"Hello {student['name']},\n\nPlease update your result to be eligible for promotion.\n\nThank you.")
+
+    if email_sent:
+        logging.info(f"📧 Reminder Email sent to {student['email']}")
+        return {"status": "success", "message": f"Result update reminder sent to {student['email']}"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to send email")
+
+# ✅ API: Promote Student to Next Year
+@app.post("/promote_student")
+async def promote_student(data: StudentPromotion):
+    student = await students_collection.find_one({"student_id": data.student_id})
+
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    if not student.get("result_updated", False):
+        raise HTTPException(status_code=400, detail="Student result not updated, promotion not allowed")
+
+    await students_collection.update_one(
+        {"student_id": data.student_id},
+        {"$set": {"year": data.new_year}}
+    )
+
+    logging.info(f"✅ Student {student['name']} promoted to {data.new_year}")
+    return {"status": "success", "message": f"Student {student['name']} promoted to {data.new_year}"}
 
 # ✅ TEST ROUTE
 @app.get("/test")
