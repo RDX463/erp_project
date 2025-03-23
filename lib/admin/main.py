@@ -17,6 +17,7 @@ from fastapi import APIRouter
 from datetime import datetime
 from fastapi import Body
 from fastapi import Request, HTTPException, Body
+from motor.motor_asyncio import AsyncIOMotorClient
 
 # Initialize FastAPI
 app = FastAPI()
@@ -48,6 +49,7 @@ try:
     payments_collection = db.payments
     queries_collection = db.document_queries
     faculty_collection = db.faculty_db
+    faculty_leaves_collection = db.faculty_leaves
     logging.info("✅ MongoDB connected successfully!")
 except Exception as e:
     logging.error(f"❌ MongoDB connection failed: {e}")
@@ -100,6 +102,11 @@ class DocumentQuery(BaseModel):
     student_id: str
     query_type: str
     comment: str
+
+# Define Leave Request Model
+class LeaveUpdate(BaseModel):
+    employee_id: str
+    status: str
 
 # ✅ ADMIN: Signup API
 @app.post("/admin_signup")
@@ -636,3 +643,37 @@ async def get_faculty():
 @app.get("/test")
 async def test_route():
     return {"status": "success", "message": "API is working!"}
+
+@app.get("/faculty/all")
+async def get_all_faculty():
+    try:
+        # Fetching all faculty details (excluding _id)
+        faculty_list = await faculty_collection.find({}, {"_id": 0}).to_list(length=None)
+
+        if not faculty_list:
+            raise HTTPException(status_code=404, detail="No faculty found")
+
+        return faculty_list
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/faculty/get_all_leaves")
+async def get_all_leaves():
+    """Fetch all faculty leave requests from MongoDB"""
+    leaves_cursor = faculty_leaves_collection.find({}, {"_id": 0})  
+    leaves = await leaves_cursor.to_list(length=None)  # Convert cursor to list
+    return leaves
+
+# Update Leave Status
+@app.put("/faculty/update_leave")
+async def update_leave_status(request: LeaveUpdate):
+    """Update the leave status for a faculty member"""
+    result = await faculty_leaves_collection.update_one(
+        {"faculty_id": request.faculty_id}, {"$set": {"status": request.status}}
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Faculty leave request not found")
+
+    return {"message": f"Leave status updated to {request.status}"}

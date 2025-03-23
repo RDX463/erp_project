@@ -240,86 +240,87 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Widget _buildPhotoGallery() {
-  return Padding(
-    padding: const EdgeInsets.all(16.0),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "📸 Photo Gallery",
-          style: Theme.of(context).textTheme.displayLarge,
-        ),
-        SizedBox(height: 8),
-        Container(
-          height: 200, // Keep the container height as is
-          child: Swiper(
-            itemBuilder: (BuildContext context, int index) {
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(8), // Optional: Add rounded corners
-                child: Image.asset(
-                  galleryImages[index],
-                  fit: BoxFit.cover, // Ensure the image covers the container
-                ),
-              );
-            },
-            itemCount: galleryImages.length,
-            pagination: SwiperPagination(),
-            control: SwiperControl(),
-            autoplay: true,
-            viewportFraction: 0.25, // Show 4 items at a time (1/4 of the screen)
-            scale: 0.9, // Optional: Scale down the images slightly for better visual effect
-          ),
-        ),
-      ],
-    ),
-  );
-}
-  Widget _buildDepartmentsSection() {
-  return Padding(
-    padding: const EdgeInsets.all(16.0),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "🏫 Engineering Departments",
-          style: Theme.of(context).textTheme.displayLarge,
-        ),
-        SizedBox(height: 8),
-        // Use a ListView to display departments
-        ListView(
-          shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
-          children: [
-            _departmentCard("Computer Science Engineering", Icons.computer),
-            _departmentCard("Mechanical Engineering", Icons.build),
-            _departmentCard("Civil Engineering", Icons.apartment),
-            _departmentCard("Electrical Engineering", Icons.electrical_services),
-            _departmentCard("Electronics and Communication Engineering", Icons.radio),
-          ],
-        ),
-      ],
-    ),
-  );
-}
-
-  Widget _departmentCard(String departmentName, IconData icon) {
-  return Card(
-    margin: EdgeInsets.symmetric(vertical: 5),
-    child: Padding(
-      padding: EdgeInsets.all(16.0),
-      child: Row(
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 40, color: Theme.of(context).primaryColor), // Use the icon here
-          SizedBox(width: 12),
           Text(
-            departmentName,
-            style: Theme.of(context).textTheme.bodyLarge,
+            "📸 Photo Gallery",
+            style: Theme.of(context).textTheme.displayLarge,
+          ),
+          SizedBox(height: 8),
+          Container(
+            height: 200, // Keep the container height as is
+            child: Swiper(
+              itemBuilder: (BuildContext context, int index) {
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(8), // Optional: Add rounded corners
+                  child: Image.asset(
+                    galleryImages[index],
+                    fit: BoxFit.cover, // Ensure the image covers the container
+                  ),
+                );
+              },
+              itemCount: galleryImages.length,
+              pagination: SwiperPagination(),
+              control: SwiperControl(),
+              autoplay: true,
+              viewportFraction: 0.25, // Show 4 items at a time (1/4 of the screen)
+              scale: 0.9, // Optional: Scale down the images slightly for better visual effect
+            ),
           ),
         ],
       ),
-    ),
-  );
-}
+    );
+  }
+
+  Widget _buildDepartmentsSection() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "🏫 Engineering Departments",
+            style: Theme.of(context).textTheme.displayLarge,
+          ),
+          SizedBox(height: 8),
+          // Use a ListView to display departments
+          ListView(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            children: [
+              _departmentCard("Computer Science Engineering", Icons.computer),
+              _departmentCard("Mechanical Engineering", Icons.build),
+              _departmentCard("Civil Engineering", Icons.apartment),
+              _departmentCard("Electrical Engineering", Icons.electrical_services),
+              _departmentCard("Electronics and Communication Engineering", Icons.radio),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _departmentCard(String departmentName, IconData icon) {
+    return Card(
+      margin: EdgeInsets.symmetric(vertical: 5),
+      child: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            Icon(icon, size: 40, color: Theme.of(context).primaryColor), // Use the icon here
+            SizedBox(width: 12),
+            Text(
+              departmentName,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _navButton(BuildContext context, String text, VoidCallback onPressed) {
     return Padding(
@@ -350,77 +351,147 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         ),
         child: Row(
           children: [
-            Icon(Icons.login, color: Theme.of(context).primaryColor, size: 18),
-            SizedBox(width: 5),
-            Text("Login", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor)),
-            Icon(Icons.arrow_drop_down, color: Theme.of(context).primaryColor, size: 20),
+            Icon(Icons.login, color: Theme.of(context).primaryColor),
+            SizedBox(width: 4),
+            Text("Login", style: TextStyle(
+              color: Theme.of(context).primaryColor,
+              fontWeight: FontWeight.bold,
+            )),
           ],
         ),
       ),
       itemBuilder: (context) => [
-        PopupMenuItem(value: "StudentLogin", child: Text("Student Login")),
-        PopupMenuItem(value: "FacultyLogin", child: Text("Faculty Login")),
-        PopupMenuItem(value: "AdminLogin", child: Text("Admin Login")),
+        PopupMenuItem(
+          value: 'admin',
+          child: Row(
+            children: [
+              Icon(Icons.admin_panel_settings, color: Theme.of(context).primaryColor),
+              SizedBox(width: 8),
+              Text("Admin Login"),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'faculty',
+          child: Row(
+            children: [
+              Icon(Icons.school, color: Theme.of(context).primaryColor),
+              SizedBox(width: 8),
+              Text("Faculty Login"),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'student',
+          child: Row(
+            children: [
+              Icon(Icons.person, color: Theme.of(context).primaryColor),
+              SizedBox(width: 8),
+              Text("Student Login"),
+            ],
+          ),
+        ),
       ],
       onSelected: (value) {
         switch (value) {
-          case "AdminLogin":
+          case 'admin':
+            Navigator.pushNamed(context, '/admin_login');
+            break;
+          case 'faculty':
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => AdminLoginPage()),
+              MaterialPageRoute(builder: (context) => FacultyLoginPage()),
             );
             break;
-          // Handle other logins
-          case "FacultyLogin":
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => FacultyLoginPage()),
-          );
-          break;
+          case 'student':
+            // Placeholder for student login
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Student login coming soon!'))
+            );
+            break;
         }
       },
     );
   }
 
-  // Build social media links
   Widget _buildSocialMediaLinks() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+      color: Color(0xFF004D40), // Darker teal for footer
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            "Connect With Us",
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              IconButton(
-                icon: FaIcon(FontAwesomeIcons.facebook, color: Theme.of(context).primaryColor),
-                onPressed: () => _launchURL('https://www.facebook.com/'),
+              _socialMediaButton(FontAwesomeIcons.facebook, Color(0xFF1877F2), 'https://facebook.com'),
+              SizedBox(width: 16),
+              _socialMediaButton(FontAwesomeIcons.twitter, Color(0xFF1DA1F2), 'https://twitter.com'),
+              SizedBox(width: 16),
+              _socialMediaButton(FontAwesomeIcons.instagram, Color(0xFFE1306C), 'https://instagram.com'),
+              SizedBox(width: 16),
+              _socialMediaButton(FontAwesomeIcons.linkedin, Color(0xFF0077B5), 'https://linkedin.com'),
+              SizedBox(width: 16),
+              _socialMediaButton(FontAwesomeIcons.youtube, Color(0xFFFF0000), 'https://youtube.com'),
+            ],
+          ),
+          SizedBox(height: 24),
+          Divider(color: Colors.white30),
+          SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "© 2025 College of Engineering. All rights reserved.",
+                style: TextStyle(color: Colors.white70),
               ),
-              IconButton(
-                icon: FaIcon(FontAwesomeIcons.twitter, color: Theme.of(context).primaryColor),
-                onPressed: () => _launchURL('https://twitter.com/'),
-              ),
-              IconButton(
-                icon: FaIcon(FontAwesomeIcons.linkedin, color: Theme.of(context).primaryColor),
-                onPressed: () => _launchURL('https://www.linkedin.com/'),
-              ),
-              IconButton(
-                icon: FaIcon(FontAwesomeIcons.youtube, color: Theme.of(context).primaryColor),
-                onPressed: () => _launchURL('https://www.youtube.com/'),
+              Row(
+                children: [
+                  TextButton(
+                    onPressed: () {},
+                    child: Text("Privacy Policy", style: TextStyle(color: Colors.white70)),
+                  ),
+                  TextButton(
+                    onPressed: () {},
+                    child: Text("Terms of Use", style: TextStyle(color: Colors.white70)),
+                  ),
+                  TextButton(
+                    onPressed: () {},
+                    child: Text("Contact Us", style: TextStyle(color: Colors.white70)),
+                  ),
+                ],
               ),
             ],
           ),
-          SizedBox(height: 10),
         ],
       ),
     );
   }
 
-  // Function to launch URL
-  void _launchURL(String url) async {
-    if (await canLaunch(url)) {
-      await launch(url);
-    } else {
-      throw 'Could not launch $url';
-    }
+  Widget _socialMediaButton(IconData icon, Color color, String url) {
+    return InkWell(
+      onTap: () async {
+        if (await canLaunch(url)) {
+          await launch(url);
+        }
+      },
+      child: Container(
+        padding: EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+        ),
+        child: FaIcon(icon, color: color, size: 24),
+      ),
+    );
   }
 }

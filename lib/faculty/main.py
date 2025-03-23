@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from pymongo import MongoClient
 from dotenv import load_dotenv
 from typing import List, Optional
+from datetime import datetime
 import os
 
 # Load environment variables from .env file
@@ -13,6 +14,7 @@ MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")  # Default to lo
 client = MongoClient(MONGO_URI)
 db = client.studentERP
 faculty_collection = db.faculty_db  # Ensure correct collection name
+faculty_leaves_collection = db.faculty_leaves
 
 app = FastAPI()
 
@@ -32,6 +34,13 @@ class FacultyUpdateSchema(BaseModel):
     gender: str
     teaching_years: List[str]
     subjects: List[str]
+    
+class LeaveRequest(BaseModel):
+    employee_id: str
+    leave_date: str
+    days: int
+    reason: str
+    status: str = "Pending"  # Default status
 
 # Faculty Login Endpoint
 @app.post("/faculty/login")
@@ -99,3 +108,21 @@ async def update_faculty_profile(employee_id: str, request: Request):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+
+# Apply for leave
+@app.post("/faculty/apply_leave")
+async def apply_leave(request: LeaveRequest):
+    try:
+        leave_date = datetime.strptime(request.leave_date, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+
+    faculty_leaves_collection.insert_one(request.dict())
+
+    return {"message": "Leave request submitted successfully!"}
+
+# Get all leave requests for a specific faculty member
+@app.get("/faculty/get_leaves/{employee_id}")
+async def get_faculty_leaves(employee_id: str):
+    leaves = list(faculty_leaves_collection.find({"employee_id": employee_id}, {"_id": 0}))
+    return leaves
