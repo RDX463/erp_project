@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart'; // Import url_launcher
 import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // Import Font Awesome
 import 'package:flutter_swiper_view/flutter_swiper_view.dart'; // Import flutter_swiper_view
 import 'admin/admin_login.dart';
+import 'faculty/faculty_login.dart';
 
 void main() {
   runApp(CollegeERPApp());
@@ -370,6 +371,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             );
             break;
           // Handle other logins
+          case "FacultyLogin":
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => FacultyLoginPage()),
+          );
+          break;
         }
       },
     );
