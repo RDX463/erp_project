@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-import 'faculty_dashboard.dart'; // Import the Faculty Dashboard page
+import 'faculty_dashboard.dart'; // Import Faculty Dashboard
 
 class FacultyLoginPage extends StatefulWidget {
   const FacultyLoginPage({super.key});
@@ -16,35 +16,49 @@ class _FacultyLoginPageState extends State<FacultyLoginPage> {
   final TextEditingController passwordController = TextEditingController();
 
   Future<void> login() async {
-    final String apiUrl = "http://127.0.0.1:8000/faculty/login"; // Change IP if needed
+    final String apiUrl = "http://127.0.0.1:8000/faculty/login";
 
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "employee_id": employeeIdController.text,
-        "password": passwordController.text,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body);
-      String facultyName = responseData["faculty_name"];
-
-      // Navigate to Faculty Dashboard and pass facultyName
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => FacultyDashboard(facultyName: facultyName),
-        ),
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "employee_id": employeeIdController.text.trim(),
+          "password": passwordController.text,
+        }),
       );
-    } else {
-      // Show error message
+
+      print("Response Code: ${response.statusCode}");
+      print("Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+
+        // Use provided employee ID since API does not return it
+        String facultyName = responseData["faculty_name"] ?? "Unknown Faculty";
+        String employeeId = employeeIdController.text.trim(); // Use inputted Employee ID
+
+        // Navigate to Faculty Dashboard
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => FacultyDashboard(
+              facultyName: facultyName,
+              employeeId: employeeId, // Ensure it's passed
+            ),
+          ),
+        );
+      } else {
+        // Handle API error
+        String errorMessage = jsonDecode(response.body)["detail"] ?? "Login failed";
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      // Handle unexpected errors
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(jsonDecode(response.body)["detail"]),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text("An error occurred: $e"), backgroundColor: Colors.red),
       );
     }
   }
