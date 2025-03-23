@@ -60,7 +60,7 @@ class StudentModule extends StatelessWidget {
             context,
             title: "Student Documents",
             icon: Icons.folder,
-            page: const StudentDocumentsPage(),
+            page: StudentDocuments(),
           ),
         ],
       ),

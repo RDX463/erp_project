@@ -1,4 +1,6 @@
 import smtplib
+import json
+from typing import List
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from fastapi.responses import JSONResponse
@@ -44,6 +46,7 @@ try:
     admins_collection = db.admins
     students_collection = db.students
     payments_collection = db.payments
+    queries_collection = db.document_queries
     logging.info("✅ MongoDB connected successfully!")
 except Exception as e:
     logging.error(f"❌ MongoDB connection failed: {e}")
@@ -90,6 +93,12 @@ class StudentFormSubmission(BaseModel):
 # 🔹 Student Scholarship Model
 class ScholarshipNotification(BaseModel):
     student_id: str
+    
+# Pydantic Model for Document Query
+class DocumentQuery(BaseModel):
+    student_id: str
+    query_type: str
+    comment: str
 
 # ✅ ADMIN: Signup API
 @app.post("/admin_signup")
@@ -545,6 +554,34 @@ async def update_student(request: Request, data: dict = Body(...)):
 
     return {"status": "info", "message": "No changes detected"}
 
+# 📌 Fetch All Students with Documents
+@app.get("/get_students")
+async def get_students():
+    students = await students_collection.find({}, {"_id": 0}).to_list(length=None)
+
+    if not students:
+        raise HTTPException(status_code=404, detail="No students found")
+    
+    return {"status": "success", "students": students}
+
+# 📌 Send Document Query to a Student
+@app.post("/send_document_query")
+async def send_document_query(query: DocumentQuery):
+    student = await students_collection.find_one({"student_id": query.student_id})
+
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    query_data = {
+        "student_id": query.student_id,
+        "query_type": query.query_type,
+        "comment": query.comment,
+        "status": "Pending"
+    }
+
+    await queries_collection.insert_one(query_data)
+
+    return {"status": "success", "message": "Query sent successfully"}
 
 # ✅ TEST ROUTE
 @app.get("/test")
