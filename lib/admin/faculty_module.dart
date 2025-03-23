@@ -3,7 +3,8 @@ import 'faculty_details.dart';
 import 'faculty_salary.dart';
 import 'faculty_income_tax.dart';
 import 'faculty_or_pr_allotment.dart';
-import 'faculty_leave_management.dart'; // Import Leave Management Page
+import 'faculty_leave_management.dart'; 
+import 'faculty_add.dart'; // Import Faculty Adding Page
 
 class FacultyModule extends StatelessWidget {
   @override
@@ -13,11 +14,12 @@ class FacultyModule extends StatelessWidget {
       body: ListView(
         padding: EdgeInsets.all(16),
         children: [
+          _buildModuleTile(context, "➕ Add Faculty", FacultyAddPage()), // New Faculty Adding Page
           _buildModuleTile(context, "📋 Faculty Details", FacultyDetailsPage()),
           _buildModuleTile(context, "💰 Faculty Salary", FacultySalaryPage()),
           _buildModuleTile(context, "🧾 Faculty Income Tax", FacultyIncomeTaxPage()),
           _buildModuleTile(context, "📜 OR-PR External Allotment", FacultyORPRAllotmentPage()),
-          _buildModuleTile(context, "🗓️ Faculty Leave Management", FacultyLeaveManagementPage()), // New Section
+          _buildModuleTile(context, "🗓️ Faculty Leave Management", FacultyLeaveManagementPage()),
         ],
       ),
     );

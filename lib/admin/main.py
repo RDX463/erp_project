@@ -47,6 +47,7 @@ try:
     students_collection = db.students
     payments_collection = db.payments
     queries_collection = db.document_queries
+    faculty_collection = db.faculty_db
     logging.info("✅ MongoDB connected successfully!")
 except Exception as e:
     logging.error(f"❌ MongoDB connection failed: {e}")
@@ -582,6 +583,54 @@ async def send_document_query(query: DocumentQuery):
     await queries_collection.insert_one(query_data)
 
     return {"status": "success", "message": "Query sent successfully"}
+
+# Faculty Model
+class Faculty(BaseModel):
+    name: str
+    employee_id: str
+    department: str
+    experience: str
+    email: str
+    phone: str
+    salary: str  # Added salary field
+    password: str
+
+# Function to Send Credentials via Email
+def send_credentials(email, emp_id, password):
+    try:
+        msg = MIMEText(f"Hello,\n\nYour Employee ID: {emp_id}\nYour Password: {password}\n\nLogin to the system using these credentials.")
+        msg["Subject"] = "Your Faculty Login Credentials"
+        msg["From"] = SMTP_EMAIL
+        msg["To"] = email
+
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_EMAIL, SMTP_PASSWORD)
+        server.sendmail(SMTP_EMAIL, email, msg.as_string())
+        server.quit()
+        return True
+    except Exception as e:
+        print("Email Error:", e)
+        return False
+
+# API Endpoint to Add Faculty
+@app.post("/add_faculty")
+async def add_faculty(faculty: Faculty):
+    faculty_data = faculty.dict()
+    await faculty_collection.insert_one(faculty_data)
+
+    email_sent = send_credentials(faculty.email, faculty.employee_id, faculty.password)
+
+    if email_sent:
+        return {"status": "success", "message": "Faculty added and email sent"}
+    else:
+        raise HTTPException(status_code=500, detail="Faculty added, but email failed")
+
+# API Endpoint to Fetch All Faculty
+@app.get("/get_faculty")
+async def get_faculty():
+    faculty_list = await faculty_collection.find().to_list(None)
+    return {"faculty": faculty_list}
 
 # ✅ TEST ROUTE
 @app.get("/test")
