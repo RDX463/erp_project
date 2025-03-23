@@ -13,6 +13,8 @@ import random
 import string
 from fastapi import APIRouter
 from datetime import datetime
+from fastapi import Body
+from fastapi import Request, HTTPException, Body
 
 # Initialize FastAPI
 app = FastAPI()
@@ -450,6 +452,99 @@ async def promote_student(data: StudentPromotion):
 
     logging.info(f"✅ Student {student['name']} promoted to {data.new_year}")
     return {"status": "success", "message": f"Student {student['name']} promoted to {data.new_year}"}
+
+# 🔹 Email Sending Function
+def send_update_email(email, name, changes, admin):
+    try:
+        change_text = "\n".join([f"- {key}: {value['old']} → {value['new']}" for key, value in changes.items()])
+
+        msg = MIMEMultipart()
+        msg["From"] = SMTP_EMAIL
+        msg["To"] = email
+        msg["Subject"] = "🔔 Student Profile Updated"
+        msg["Reply-To"] = SMTP_EMAIL  # Allows students to reply to admin
+
+        email_body = f"""
+        Hello {name},
+
+        Your student profile has been updated with the following changes:
+
+        {change_text}
+
+        If you have any concerns, please contact the admin: {admin}.
+
+        Regards,
+        Admin Team
+        """
+        msg.attach(MIMEText(email_body, "plain"))
+
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_EMAIL, SMTP_PASSWORD)
+        server.sendmail(SMTP_EMAIL, email, msg.as_string())
+
+        logging.info(f"📧 Update Email sent to {email}")
+        return True
+    except Exception as e:
+        logging.error(f"❌ Email sending failed: {e}")
+        return False
+    finally:
+        server.quit()  # Ensures connection is closed
+
+# ✅ API: Fetch All Students
+@app.get("/get_students")
+async def get_students(skip: int = 0, limit: int = 10):
+    students = await students_collection.find({}, {"_id": 0}).skip(skip).limit(limit).to_list(length=limit)
+    
+    if not students:
+        return {"status": "error", "message": "No students found"}
+    
+    return {"status": "success", "students": students}
+
+
+@app.post("/update_student")
+async def update_student(request: Request, data: dict = Body(...)):
+    logging.info(f"Received update request: {await request.json()}")  # Logging instead of print
+
+    updated_data = data.get("updated_data")
+    student_id = updated_data.get("student_id") if updated_data else None
+    admin = data.get("admin")
+
+    if not student_id or not updated_data:
+        raise HTTPException(status_code=400, detail="Missing student_id or updated_data")
+
+    student = await students_collection.find_one({"student_id": student_id})
+
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    # Track Changes
+    changes = {}
+    for key, new_value in updated_data.items():
+        old_value = student.get(key)
+        if old_value != new_value and not (old_value is None and new_value is None):
+            changes[key] = {"old": old_value, "new": new_value}
+
+    if changes:
+        update_result = await students_collection.update_one(
+            {"student_id": student_id},
+            {"$set": updated_data}
+        )
+
+        if update_result.modified_count == 0:
+            raise HTTPException(status_code=500, detail="Database update failed")
+
+        email_sent = send_update_email(student["email"], student["name"], changes, admin)
+
+        return {
+            "status": "success",
+            "message": "Student details updated",
+            "changes": changes,
+            "email_sent": email_sent
+        }
+
+    return {"status": "info", "message": "No changes detected"}
+
 
 # ✅ TEST ROUTE
 @app.get("/test")
