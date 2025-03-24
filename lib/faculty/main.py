@@ -126,3 +126,4 @@ async def apply_leave(request: LeaveRequest):
 async def get_faculty_leaves(employee_id: str):
     leaves = list(faculty_leaves_collection.find({"employee_id": employee_id}, {"_id": 0}))
     return leaves
+

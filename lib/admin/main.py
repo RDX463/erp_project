@@ -596,10 +596,14 @@ class Faculty(BaseModel):
     name: str
     employee_id: str
     department: str
-    experience: str
-    email: str
+    designation: str
+    gender: str
+    experience: int
+    email: EmailStr
     phone: str
-    salary: str  # Added salary field
+    salary: float
+    qualification: str
+    specialization: str
     password: str
 
 # Function to Send Credentials via Email
@@ -623,15 +627,19 @@ def send_credentials(email, emp_id, password):
 # API Endpoint to Add Faculty
 @app.post("/add_faculty")
 async def add_faculty(faculty: Faculty):
-    faculty_data = faculty.dict()
-    await faculty_collection.insert_one(faculty_data)
+    print(f"Received faculty data: {faculty}")  # Debugging
 
-    email_sent = send_credentials(faculty.email, faculty.employee_id, faculty.password)
+    # Check if email already exists
+    existing_faculty = await faculty_collection.find_one({"email": faculty.email})
+    if existing_faculty:
+        raise HTTPException(status_code=400, detail="Faculty with this email already exists")
 
-    if email_sent:
-        return {"status": "success", "message": "Faculty added and email sent"}
-    else:
-        raise HTTPException(status_code=500, detail="Faculty added, but email failed")
+    # Insert faculty data into MongoDB
+    faculty_dict = faculty.dict()
+    faculty_dict["_id"] = str(ObjectId())  # Convert ObjectId to string
+    await faculty_collection.insert_one(faculty_dict)
+
+    return {"message": "Faculty added successfully", "employee_id": faculty.employee_id, "password": faculty.password}
 
 # API Endpoint to Fetch All Faculty
 @app.get("/get_faculty")
@@ -665,15 +673,51 @@ async def get_all_leaves():
     leaves = await leaves_cursor.to_list(length=None)  # Convert cursor to list
     return leaves
 
-# Update Leave Status
+def convert_objectid(doc):
+    #Convert MongoDB document ObjectId to string for JSON serialization
+    if doc and "_id" in doc:
+        doc["_id"] = str(doc["_id"])
+    return doc
+
+# Update Leave Status API
 @app.put("/faculty/update_leave")
 async def update_leave_status(request: LeaveUpdate):
-    """Update the leave status for a faculty member"""
+    print(f"Received Data: {request.dict()}")  # Debugging
+
+    # Debug: Check if ANY leave exists for this employee_id
+    leave_check = await faculty_leaves_collection.find_one({"employee_id": request.employee_id})
+    print(f"Any Leave Found for Employee? {leave_check}")  
+
+    # If no leave request exists at all, return 404
+    if not leave_check:
+        raise HTTPException(status_code=404, detail=f"No leave request found for employee_id {request.employee_id}")
+
+    # Check if a "Pending" leave request exists
+    leave_record = await faculty_leaves_collection.find_one({
+        "employee_id": request.employee_id,
+        "status": "Pending"  # ✅ Only update pending leave requests
+    })
+    print(f"Pending Leave Record: {leave_record}")  
+
+    if not leave_record:
+        raise HTTPException(status_code=404, detail=f"No pending leave request found for employee_id {request.employee_id}")
+
+    # Update Leave Status
     result = await faculty_leaves_collection.update_one(
-        {"faculty_id": request.faculty_id}, {"$set": {"status": request.status}}
+        {"_id": leave_record["_id"]},  # ✅ Match specific leave request by ID
+        {"$set": {"status": request.status}}
     )
 
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Faculty leave request not found")
+    print(f"Update Result: {result.modified_count}")  # Debugging
 
-    return {"message": f"Leave status updated to {request.status}"}
+    if result.modified_count == 0:
+        raise HTTPException(status_code=400, detail="Leave status update failed")
+
+    # Fetch Updated Data and Return
+    updated_leave = await faculty_leaves_collection.find_one({"_id": leave_record["_id"]})
+    return {
+        "message": "Leave status updated successfully",
+        "updated_leave": convert_objectid(updated_leave)
+    }
+
+    

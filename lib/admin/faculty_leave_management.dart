@@ -83,37 +83,45 @@ class _FacultyLeaveManagementPageState extends State<FacultyLeaveManagementPage>
 
   /// Approve or Reject Leave Request
   Future<void> _updateLeaveStatus(String employeeId, String leaveName, String status) async {
+  setState(() {
+    _isProcessing = true;
+    _processingEmployeeId = employeeId;
+  });
+
+  print("Sending Leave Update Request:");
+  print("Employee ID: $employeeId");
+  print("New Status: $status");
+
+  try {
+    final response = await http.put(
+      Uri.parse("http://127.0.0.1:5000/faculty/update_leave"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"employee_id": employeeId, "status": status}),
+    );
+
+    print("Response Status Code: ${response.statusCode}");
+    print("Response Body: ${response.body}");
+
     setState(() {
-      _isProcessing = true;
-      _processingEmployeeId = employeeId;
+      _isProcessing = false;
+      _processingEmployeeId = "";
     });
-    
-    try {
-      final response = await http.put(
-        Uri.parse("http://127.0.0.1:5000/faculty/update_leave"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"employee_id": employeeId, "status": status}),
-      );
 
-      setState(() {
-        _isProcessing = false;
-        _processingEmployeeId = "";
-      });
-
-      if (response.statusCode == 200) {
-        _showSuccessSnackbar("$leaveName's leave request ${status.toLowerCase()} successfully!");
-        await _fetchLeaveRequests(); // Refresh list after update
-      } else {
-        throw Exception("Failed to update leave request.");
-      }
-    } catch (e) {
-      setState(() {
-        _isProcessing = false;
-        _processingEmployeeId = "";
-      });
-      _showErrorSnackbar("Error: $e");
+    if (response.statusCode == 200) {
+      _showSuccessSnackbar("$leaveName's leave request ${status.toLowerCase()} successfully!");
+      await _fetchLeaveRequests(); // ✅ Refresh list after update
+    } else {
+      throw Exception("Failed to update leave request.");
     }
+  } catch (e) {
+    setState(() {
+      _isProcessing = false;
+      _processingEmployeeId = "";
+    });
+    _showErrorSnackbar("Error: $e");
   }
+}
+
 
   void _confirmUpdateStatus(String employeeId, String name, String status) {
     final String statusAction = status == "Approved" ? "approve" : "reject";
@@ -704,187 +712,187 @@ class _FacultyLeaveManagementPageState extends State<FacultyLeaveManagementPage>
   }
   
   Widget _buildExpandedDetails(Map<String, dynamic> leave, bool isPending, bool isProcessingThis) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(12),
-          bottomRight: Radius.circular(12),
-        ),
+  return Container(
+    width: double.infinity,
+    decoration: BoxDecoration(
+      color: Colors.grey.shade50,
+      borderRadius: const BorderRadius.only(
+        bottomLeft: Radius.circular(12),
+        bottomRight: Radius.circular(12),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Leave Details",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade800,
-                    fontSize: 14,
-                  ),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Divider(height: 1),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Leave Details",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade800,
+                  fontSize: 14,
                 ),
-                const SizedBox(height: 12),
-                
-                _buildDetailRow(
-                  "Type",
-                  leave["leave_type"] ?? "Regular Leave",
-                  Icons.category,
+              ),
+              const SizedBox(height: 12),
+              
+              _buildDetailRow(
+                "Type",
+                leave["leave_type"] ?? "Regular Leave",
+                Icons.category,
+              ),
+              
+              const SizedBox(height: 8),
+              
+              _buildDetailRow(
+                "Duration",
+                "${_formatDate(leave["leave_date"] ?? "Unknown")}${leave["end_date"] != null ? " to ${_formatDate(leave["end_date"])}" : ""}",
+                Icons.date_range,
+              ),
+              
+              const SizedBox(height: 8),
+              
+              _buildDetailRow(
+                "Status",
+                "${leave["status"] ?? "Unknown"}${leave["status_date"] != null ? " on ${_formatDate(leave["status_date"])}" : ""}",
+                Icons.info,
+              ),
+              
+              const SizedBox(height: 16),
+              
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
                 ),
-                
-                const SizedBox(height: 8),
-                
-                _buildDetailRow(
-                  "Duration",
-                  "${_formatDate(leave["leave_date"] ?? "Unknown")}${leave["end_date"] != null ? " to ${_formatDate(leave["end_date"])}" : ""}",
-                  Icons.date_range,
-                ),
-                
-                const SizedBox(height: 8),
-                
-                _buildDetailRow(
-                  "Status",
-                  "${leave["status"] ?? "Unknown"}${leave["status_date"] != null ? " on ${_formatDate(leave["status_date"])}" : ""}",
-                  Icons.info,
-                ),
-                
-                const SizedBox(height: 16),
-                
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.description,
-                            size: 16,
-                            color: Colors.grey.shade700,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            "Reason for Leave",
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade800,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        leave["reason"] ?? "No reason provided",
-                        style: TextStyle(
-                          color: Colors.grey.shade900,
-                          fontSize: 14,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.description,
+                          size: 16,
+                          color: Colors.grey.shade700,
                         ),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Reason for Leave",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade800,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      leave["reason"] ?? "No reason provided",
+                      style: TextStyle(
+                        color: Colors.grey.shade900,
+                        fontSize: 14,
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Action buttons for pending requests
+        if (isPending)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.shade200,
+                  blurRadius: 2,
+                  offset: const Offset(0, -1),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: isProcessingThis
+                      ? null
+                      : () => _confirmUpdateStatus(
+                            leave["employee_id"] ?? "", // Added null check
+                            leave["name"] ?? "Unknown Employee", // Added null check
+                            "Rejected",
+                          ),
+                  icon: isProcessingThis
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.red.shade300,
+                          ),
+                        )
+                      : const Icon(Icons.cancel, size: 16),
+                  label: const Text("Reject"),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red.shade700,
+                    side: BorderSide(color: Colors.red.shade200),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: isProcessingThis
+                      ? null
+                      : () => _confirmUpdateStatus(
+                            leave["employee_id"] ?? "", // Added null check
+                            leave["name"] ?? "Unknown Employee", // Added null check
+                            "Approved",
+                          ),
+                  icon: isProcessingThis
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.check_circle, size: 16),
+                  label: const Text("Approve"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green.shade600,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.green.shade200,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          
-          // Action buttons for pending requests
-          if (isPending)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(12),
-                  bottomRight: Radius.circular(12),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.shade200,
-                    blurRadius: 2,
-                    offset: const Offset(0, -1),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: isProcessingThis
-                        ? null
-                        : () => _confirmUpdateStatus(
-                              leave["employee_id"],
-                              leave["name"],
-                              "Rejected",
-                            ),
-                    icon: isProcessingThis
-                        ? SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.red.shade300,
-                            ),
-                          )
-                        : const Icon(Icons.cancel, size: 16),
-                    label: const Text("Reject"),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red.shade700,
-                      side: BorderSide(color: Colors.red.shade200),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: isProcessingThis
-                        ? null
-                        : () => _confirmUpdateStatus(
-                              leave["employee_id"],
-                              leave["name"],
-                              "Approved",
-                            ),
-                    icon: isProcessingThis
-                        ? SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.check_circle, size: 16),
-                    label: const Text("Approve"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green.shade600,
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: Colors.green.shade200,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
+}
   
   Widget _buildDetailRow(String label, String value, IconData icon) {
     return Row(

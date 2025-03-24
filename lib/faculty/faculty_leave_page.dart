@@ -29,26 +29,27 @@ class _FacultyLeavePageState extends State<FacultyLeavePage> {
 
   /// Fetch leave requests for the faculty
   Future<void> _fetchLeaveRequests() async {
-    try {
-      final response = await http.get(
-        Uri.parse("http://127.0.0.1:8000/faculty/get_leaves/${widget.employeeId}"),
-      );
+  try {
+    final response = await http.get(
+      Uri.parse("http://127.0.0.1:8000/faculty/get_leaves/${widget.employeeId}"),
+    );
 
-      if (response.statusCode == 200) {
-        setState(() {
-          _leaveRequests = List<Map<String, dynamic>>.from(jsonDecode(response.body));
-          _isLoading = false;
-        });
-      } else {
-        throw Exception("Failed to load leave requests.");
-      }
-    } catch (e) {
-      _showSnackBar("Error fetching leave requests: $e", isError: true);
+    if (response.statusCode == 200) {
+      print("Leave requests fetched: ${response.body}"); // Debugging line
       setState(() {
+        _leaveRequests = List<Map<String, dynamic>>.from(jsonDecode(response.body));
         _isLoading = false;
       });
+    } else {
+      throw Exception("Failed to load leave requests.");
     }
+  } catch (e) {
+    _showSnackBar("Error fetching leave requests: $e", isError: true);
+    setState(() {
+      _isLoading = false;
+    });
   }
+}
 
   /// Show a snackbar with customized styling
   void _showSnackBar(String message, {bool isError = false}) {
