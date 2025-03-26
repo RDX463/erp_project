@@ -86,6 +86,7 @@ class StudentAdmission(BaseModel):
     category: str  # OBC, SC, NT, ST, OPEN
     allotment_number: str
     department: str  # COM, AIDS, MECH, ENTC, CIVIL
+    division: str
 
 class StudentFormSubmission(BaseModel):
     student_id: str
@@ -169,7 +170,7 @@ def send_email(email: str, name: str, form_link: str):
         return False
 
 # ✅ STUDENT: Admission API
-@app.post("/admit_student")
+@app.post("/admit-student")
 async def admit_student(student: StudentAdmission):
     student_id = generate_student_id()
     scholarship_eligible = student.category.lower() != "open"
@@ -183,6 +184,7 @@ async def admit_student(student: StudentAdmission):
         "category": student.category,
         "scholarship_eligible": scholarship_eligible,
         "allotment_number": student.allotment_number,
+        "division": student.division,
         "year": "FE",
         "department": student.department,
         "form_link": form_link,
@@ -192,13 +194,13 @@ async def admit_student(student: StudentAdmission):
 
     await students_collection.insert_one(new_student)
 
-    # Send email with form link
+    # ✅ Send email with form link
     email_sent = send_email(student.email, student.name, form_link)
     
     if not email_sent:
         return {"status": "error", "message": "Student admitted, but email failed to send"}
 
-    logging.info(f"✅ Student Admitted: {student.name} (ID: {student_id})")
+    print(f"✅ Student Admitted: {student.name} (ID: {student_id})")
     return {"status": "success", "message": "Student admitted successfully", "student_id": student_id, "form_link": form_link}
 
 # ✅ STUDENT: Form Submission API
