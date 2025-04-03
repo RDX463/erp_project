@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'student_fees_pay.dart'; // Import the new Fees Payment Page
+import 'student_fees_pay.dart'; // Import the Fees Payment Page
 
 class StudentAdmissionPage extends StatefulWidget {
   const StudentAdmissionPage({super.key});
@@ -19,10 +19,13 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
 
   String selectedCategory = "OPEN";
   String selectedDepartment = "COM";
-  String studentId = "";  // Store generated Student ID
+  String selectedDivision = "A"; // ✅ New Division Field
+  String studentId = "";  
   bool isScholarshipApplicable = false;
+
   final List<String> categories = ["OBC", "SC", "NT", "ST", "OPEN"];
   final List<String> departments = ["COM", "AIDS", "MECH", "ENTC", "CIVIL"];
+  final List<String> divisions = ["A", "B", "C", "D"]; // ✅ New Division Options
   final String admissionYear = "FE";
 
   void generateStudentId() {
@@ -39,59 +42,58 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
   }
 
   void admitStudent() async {
-  if (nameController.text.isEmpty ||
-      emailController.text.isEmpty ||
-      phoneController.text.isEmpty ||
-      allotmentController.text.isEmpty) {
-    _showDialog("Error", "All fields are required.");
-    return;
-  }
-
-  generateStudentId();
-  checkScholarshipEligibility();
-
-  // Backend API URL
-  const String apiUrl = "http://localhost:5000/admit_student";
-
-  try {
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {"Content-Type": "application/json"},
-      body: json.encode({
-        "name": nameController.text,
-        "email": emailController.text,
-        "phone": phoneController.text,
-        "category": selectedCategory,
-        "allotment_number": allotmentController.text,
-        "department": selectedDepartment
-      }),
-    );
-
-    final responseBody = json.decode(response.body);
-
-    if (response.statusCode == 200) {
-      setState(() {
-        studentId = responseBody["student_id"];  
-      });
-
-      // Navigate to Student Fees Payment Page after admission success
-      Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (context) => StudentFeesPayPage(
-      studentId: studentId,
-      isScholarshipApplicable: isScholarshipApplicable,  // Pass scholarship status
-    ),
-  ),
-);
-
-    } else {
-      _showDialog("Error", responseBody["message"] ?? "Failed to admit student.");
+    if (nameController.text.isEmpty ||
+        emailController.text.isEmpty ||
+        phoneController.text.isEmpty ||
+        allotmentController.text.isEmpty) {
+      _showDialog("Error", "All fields are required.");
+      return;
     }
-  } catch (e) {
-    _showDialog("Error", "Network error! Please try again.");
+
+    generateStudentId();
+    checkScholarshipEligibility();
+
+    const String apiUrl = "http://localhost:5000/admit_student";
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {"Content-Type": "application/json"},
+        body: json.encode({
+          "name": nameController.text,
+          "email": emailController.text,
+          "phone": phoneController.text,
+          "category": selectedCategory,
+          "allotment_number": allotmentController.text,
+          "department": selectedDepartment,
+          "division": selectedDivision // ✅ Sending Division to Backend
+        }),
+      );
+
+      final responseBody = json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        setState(() {
+          studentId = responseBody["student_id"];
+        });
+
+        // ✅ Navigate to Fees Payment Page after admission success
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => StudentFeesPayPage(
+              studentId: studentId,
+              isScholarshipApplicable: isScholarshipApplicable,
+            ),
+          ),
+        );
+      } else {
+        _showDialog("Error", responseBody["message"] ?? "Failed to admit student.");
+      }
+    } catch (e) {
+      _showDialog("Error", "Network error! Please try again.");
+    }
   }
-}
 
   void _showDialog(String title, String message) {
     showDialog(
@@ -118,7 +120,7 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
         title: const Text("Student Admission"),
         backgroundColor: Colors.blueAccent,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
@@ -130,6 +132,7 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
             const SizedBox(height: 10),
             buildTextField(allotmentController, "Allotment Number", Icons.confirmation_number),
             const SizedBox(height: 10),
+
             buildDropdown("Category", categories, selectedCategory, (String? value) {
               setState(() {
                 selectedCategory = value!;
@@ -137,14 +140,24 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
               });
             }),
             const SizedBox(height: 10),
+
             buildDropdown("Department", departments, selectedDepartment, (String? value) {
               setState(() {
                 selectedDepartment = value!;
               });
             }),
             const SizedBox(height: 10),
+
+            buildDropdown("Division", divisions, selectedDivision, (String? value) { 
+              setState(() {
+                selectedDivision = value!;
+              });
+            }),
+            const SizedBox(height: 10),
+
             Text("Year: $admissionYear", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
+
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -154,6 +167,7 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
               ),
             ),
             const SizedBox(height: 20),
+
             if (studentId.isNotEmpty)
               Container(
                 padding: const EdgeInsets.all(10),
@@ -170,6 +184,10 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
                     Text(
                       studentId,
                       style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue),
+                    ),
+                    Text(
+                      "Division: $selectedDivision", // ✅ Display Division
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
                     ),
                   ],
                 ),

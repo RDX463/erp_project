@@ -84,6 +84,7 @@ class StudentAdmission(BaseModel):
     category: str  # OBC, SC, NT, ST, OPEN
     allotment_number: str
     department: str  # COM, AIDS, MECH, ENTC, CIVIL
+    division: str  # Example: A, B, C, D
 
 class StudentFormSubmission(BaseModel):
     student_id: str
@@ -180,7 +181,8 @@ async def admit_student(student: StudentAdmission):
         "department": student.department,
         "form_link": form_link,
         "form_completed": False,
-        "created_at": datetime.utcnow()
+        "created_at": datetime.utcnow(),
+        "division": student.division
     }
 
     await students_collection.insert_one(new_student)
@@ -557,11 +559,11 @@ async def update_student(request: Request, data: dict = Body(...)):
 
 # 📌 Fetch All Students with Documents
 @app.get("/get_students")
-async def get_students():
-    students = await students_collection.find({}, {"_id": 0}).to_list(length=None)
-
+async def get_students(skip: int = 0, limit: int = 10):
+    students = await students_collection.find({}, {"_id": 0, "student_id": 1, "name": 1, "division": 1}).skip(skip).limit(limit).to_list(length=limit)
+    
     if not students:
-        raise HTTPException(status_code=404, detail="No students found")
+        return {"status": "error", "message": "No students found"}
     
     return {"status": "success", "students": students}
 
