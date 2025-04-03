@@ -16,7 +16,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
   final TextEditingController employeeIdController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool _isLoading = false;
-  final String logoPath = '/home/rdx/Documents/new_erp/erp/assets/logo.jpg'; // Ensure the logo is in "assets/"
+  final String logoPath = '/assets/logo.jpg'; // Ensure the logo is in "assets/"
 
   @override
   Widget build(BuildContext context) {
