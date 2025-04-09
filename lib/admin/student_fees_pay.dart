@@ -23,14 +23,15 @@ class _StudentFeesPayPageState extends State<StudentFeesPayPage> {
   void processPayment() async {
     const int totalFees = 96000;
     const int scholarshipAmount = 43000;
-    int payableFees = widget.isScholarshipApplicable ? (totalFees - scholarshipAmount) : totalFees;
+    int payableFees = widget.isScholarshipApplicable
+        ? (totalFees - scholarshipAmount)
+        : totalFees;
 
-    // Convert user input to integer
     int enteredAmount = int.tryParse(_amountController.text) ?? 0;
 
-    // Validation: Ensure entered amount is within allowed range
     if (enteredAmount <= 0 || enteredAmount > payableFees) {
-      _showDialog("Invalid Amount", "Please enter a valid amount up to ₹$payableFees.");
+      _showDialog(
+          "Invalid Amount", "Please enter a valid amount up to ₹$payableFees.");
       return;
     }
 
@@ -43,7 +44,6 @@ class _StudentFeesPayPageState extends State<StudentFeesPayPage> {
         body: json.encode({
           "student_id": widget.studentId,
           "amount_paid": enteredAmount,
-          "status": "Paid",
         }),
       );
 
@@ -54,9 +54,11 @@ class _StudentFeesPayPageState extends State<StudentFeesPayPage> {
           isPaymentSuccessful = true;
         });
 
-        _showDialog("Payment Successful", "Fees payment of ₹$enteredAmount has been completed.");
+        _showDialog("Payment Successful",
+            "Fees payment of ₹$enteredAmount has been completed.");
       } else {
-        _showDialog("Payment Failed", responseBody["message"] ?? "Something went wrong!");
+        _showDialog("Payment Failed",
+            responseBody["message"] ?? "Something went wrong!");
       }
     } catch (e) {
       _showDialog("Error", "Network error! Please try again.");
@@ -75,10 +77,11 @@ class _StudentFeesPayPageState extends State<StudentFeesPayPage> {
               onPressed: () {
                 Navigator.of(context).pop();
                 if (isPaymentSuccessful) {
-                  Navigator.pop(context); // Go back after successful payment
+                  Navigator.pop(context); // Return after success
                 }
               },
-              child: const Text("OK", style: TextStyle(color: Colors.blueAccent)),
+              child: const Text("OK",
+                  style: TextStyle(color: Colors.blueAccent)),
             ),
           ],
         );
@@ -90,7 +93,9 @@ class _StudentFeesPayPageState extends State<StudentFeesPayPage> {
   Widget build(BuildContext context) {
     const int totalFees = 96000;
     const int scholarshipAmount = 43000;
-    int payableFees = widget.isScholarshipApplicable ? (totalFees - scholarshipAmount) : totalFees;
+    int payableFees = widget.isScholarshipApplicable
+        ? (totalFees - scholarshipAmount)
+        : totalFees;
 
     return Scaffold(
       appBar: AppBar(
@@ -98,28 +103,31 @@ class _StudentFeesPayPageState extends State<StudentFeesPayPage> {
         backgroundColor: Colors.blueAccent,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               "Fees Payment Details",
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
-            Text("Student ID: ${widget.studentId}", style: const TextStyle(fontSize: 18)),
+            Text("Student ID: ${widget.studentId}",
+                style: const TextStyle(fontSize: 18)),
             const SizedBox(height: 10),
             Text(
               "Scholarship: ${widget.isScholarshipApplicable ? "Yes (₹43,000 discount)" : "No"}",
               style: const TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 10),
-            Text("Total Fees: ₹$totalFees", style: const TextStyle(fontSize: 18)),
+            const Text("Total Fees: ₹96000", style: TextStyle(fontSize: 18)),
             const SizedBox(height: 10),
             Text(
               "Payable Fees: ₹$payableFees",
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green),
+              style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green),
             ),
             const SizedBox(height: 30),
             TextField(
@@ -136,7 +144,8 @@ class _StudentFeesPayPageState extends State<StudentFeesPayPage> {
               child: ElevatedButton(
                 onPressed: processPayment,
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                child: const Text("Proceed to Pay", style: TextStyle(color: Colors.white, fontSize: 18)),
+                child: const Text("Proceed to Pay",
+                    style: TextStyle(color: Colors.white, fontSize: 18)),
               ),
             ),
           ],

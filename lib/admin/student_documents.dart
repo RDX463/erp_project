@@ -33,11 +33,11 @@ class _StudentDocumentsState extends State<StudentDocuments> {
 
     if (response.statusCode == 200) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Query sent successfully!")),
+        const SnackBar(content: Text("Query sent successfully!")),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to send query")),
+        const SnackBar(content: Text("Failed to send query")),
       );
     }
   }
@@ -46,7 +46,7 @@ class _StudentDocumentsState extends State<StudentDocuments> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("📄 Student Documents"),
+        title: const Text("📄 Student Documents"),
         backgroundColor: Colors.blueAccent,
       ),
       body: Column(
@@ -59,16 +59,14 @@ class _StudentDocumentsState extends State<StudentDocuments> {
                 Expanded(
                   child: TextField(
                     controller: searchController,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       labelText: "🔎 Search by Student ID",
                       border: OutlineInputBorder(),
                     ),
-                    onChanged: (value) {
-                      setState(() {}); // Trigger UI update
-                    },
+                    onChanged: (value) => setState(() {}),
                   ),
                 ),
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
                 DropdownButton<String>(
                   value: selectedDepartment,
                   onChanged: (newValue) {
@@ -93,12 +91,12 @@ class _StudentDocumentsState extends State<StudentDocuments> {
               future: fetchStudents(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
-                  return Center(child: CircularProgressIndicator());
+                  return const Center(child: CircularProgressIndicator());
                 }
 
                 var students = snapshot.data!.where((student) {
-                  var studentID = student["student_id"].toString();
-                  var department = student["department"].toString();
+                  String studentID = student["student_id"].toString();
+                  String department = student["department"].toString();
 
                   bool matchesSearch = studentID.contains(searchController.text);
                   bool matchesFilter = selectedDepartment == "All" || department == selectedDepartment;
@@ -109,36 +107,36 @@ class _StudentDocumentsState extends State<StudentDocuments> {
                 return SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: DataTable(
-                    columns: [
-                      DataColumn(label: Text("Student Name")),
-                      DataColumn(label: Text("ID")),
+                    columns: const [
+                      DataColumn(label: Text("Student ID")),
                       DataColumn(label: Text("Department")),
                       DataColumn(label: Text("Documents")),
                       DataColumn(label: Text("Actions")),
                     ],
                     rows: students.map((student) {
-                      String name = student["name"];
                       String studentID = student["student_id"];
                       String department = student["department"];
                       List<dynamic> documents = student["documents"] ?? [];
 
                       return DataRow(cells: [
-                        DataCell(Text(name)),
                         DataCell(Text(studentID)),
                         DataCell(Text(department)),
                         DataCell(
                           documents.isEmpty
-                              ? Text("❌ No Documents", style: TextStyle(color: Colors.red))
+                              ? const Text("❌ No Documents", style: TextStyle(color: Colors.red))
                               : Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: documents.map((doc) {
                                     return GestureDetector(
                                       onTap: () async {
-                                        if (await canLaunch(doc)) {
-                                          await launch(doc);
+                                        if (await canLaunchUrl(Uri.parse(doc))) {
+                                          await launchUrl(Uri.parse(doc), mode: LaunchMode.externalApplication);
                                         }
                                       },
-                                      child: Text("📂 ${doc.split('/').last}", style: TextStyle(color: Colors.blue)),
+                                      child: Text(
+                                        "📂 ${doc.split('/').last}",
+                                        style: const TextStyle(color: Colors.blue),
+                                      ),
                                     );
                                   }).toList(),
                                 ),
@@ -147,20 +145,19 @@ class _StudentDocumentsState extends State<StudentDocuments> {
                           Row(
                             children: [
                               IconButton(
-                                icon: Icon(Icons.visibility, color: Colors.blue),
+                                icon: const Icon(Icons.visibility, color: Colors.blue),
                                 onPressed: documents.isNotEmpty
                                     ? () async {
-                                        if (await canLaunch(documents.first)) {
-                                          await launch(documents.first);
+                                        final url = Uri.parse(documents.first);
+                                        if (await canLaunchUrl(url)) {
+                                          await launchUrl(url, mode: LaunchMode.externalApplication);
                                         }
                                       }
                                     : null,
                               ),
                               IconButton(
-                                icon: Icon(Icons.message, color: Colors.orange),
-                                onPressed: () {
-                                  _sendQueryDialog(studentID);
-                                },
+                                icon: const Icon(Icons.message, color: Colors.orange),
+                                onPressed: () => _sendQueryDialog(studentID),
                               ),
                             ],
                           ),
@@ -187,7 +184,7 @@ class _StudentDocumentsState extends State<StudentDocuments> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text("📩 Send Query to Student"),
+          title: const Text("📩 Send Query to Student"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -205,9 +202,10 @@ class _StudentDocumentsState extends State<StudentDocuments> {
                   );
                 }).toList(),
               ),
+              const SizedBox(height: 8),
               TextField(
                 controller: queryController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: "Additional Comments (Optional)",
                   border: OutlineInputBorder(),
                 ),
@@ -217,14 +215,14 @@ class _StudentDocumentsState extends State<StudentDocuments> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text("Cancel"),
+              child: const Text("Cancel"),
             ),
             ElevatedButton(
               onPressed: () {
                 sendDocumentQuery(studentID, selectedQuery, queryController.text);
                 Navigator.pop(context);
               },
-              child: Text("Send"),
+              child: const Text("Send"),
             ),
           ],
         );

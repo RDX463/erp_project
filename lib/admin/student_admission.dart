@@ -11,18 +11,15 @@ class StudentAdmissionPage extends StatefulWidget {
 }
 
 class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
-  final TextEditingController nameController = TextEditingController();
+  final TextEditingController studentIdController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController allotmentController = TextEditingController();
-  final TextEditingController rollNoController = TextEditingController();
 
   String selectedCategory = "OPEN";
   String selectedDepartment = "COM";
   String selectedDivision = "A";
-  String studentId = "";
   bool isScholarshipApplicable = false;
-  bool isAdmitted = false;
 
   final List<String> categories = ["OBC", "SC", "NT", "ST", "OPEN"];
   final List<String> departments = ["COM", "AIDS", "MECH", "ENTC", "CIVIL"];
@@ -36,11 +33,9 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
   }
 
   void admitStudent() async {
-    if (nameController.text.isEmpty ||
-        emailController.text.isEmpty ||
+    if (emailController.text.isEmpty ||
         phoneController.text.isEmpty ||
-        allotmentController.text.isEmpty ||
-        rollNoController.text.isEmpty) {
+        allotmentController.text.isEmpty) {
       _showDialog("Error", "All fields are required.");
       return;
     }
@@ -54,14 +49,12 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
         Uri.parse(apiUrl),
         headers: {"Content-Type": "application/json"},
         body: json.encode({
-          "name": nameController.text,
           "email": emailController.text,
           "phone": phoneController.text,
           "category": selectedCategory,
           "allotment_number": allotmentController.text,
           "department": selectedDepartment,
           "division": selectedDivision,
-          "roll_no": int.parse(rollNoController.text),
         }),
       );
 
@@ -69,8 +62,7 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
 
       if (response.statusCode == 200) {
         setState(() {
-          studentId = responseBody["student_id"];
-          isAdmitted = true;
+          studentIdController.text = responseBody["student_id"];
         });
       } else {
         _showDialog("Error", responseBody["message"] ?? "Failed to admit student.");
@@ -78,6 +70,18 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
     } catch (e) {
       _showDialog("Error", "Network error! Please try again.");
     }
+  }
+
+  void goToFeesPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => StudentFeesPayPage(
+          studentId: studentIdController.text,
+          isScholarshipApplicable: isScholarshipApplicable,
+        ),
+      ),
+    );
   }
 
   void _showDialog(String title, String message) {
@@ -98,18 +102,6 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
     );
   }
 
-  void goToFeesPage() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => StudentFeesPayPage(
-          studentId: studentId,
-          isScholarshipApplicable: isScholarshipApplicable,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -117,11 +109,11 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
         title: const Text("Student Admission"),
         backgroundColor: Colors.blueAccent,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+      body: Padding(
+        padding: const EdgeInsets.all(12.0),
         child: Column(
           children: [
-            buildTextField(nameController, "Student Name", Icons.person),
+            buildTextField(studentIdController, "Student ID", Icons.badge, TextInputType.text, true),
             const SizedBox(height: 10),
             buildTextField(emailController, "Email ID", Icons.email, TextInputType.emailAddress),
             const SizedBox(height: 10),
@@ -129,33 +121,41 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
             const SizedBox(height: 10),
             buildTextField(allotmentController, "Allotment Number", Icons.confirmation_number),
             const SizedBox(height: 10),
-            buildTextField(rollNoController, "Roll Number", Icons.format_list_numbered, TextInputType.number),
-            const SizedBox(height: 10),
 
-            buildDropdown("Category", categories, selectedCategory, (String? value) {
-              setState(() {
-                selectedCategory = value!;
-                checkScholarshipEligibility();
-              });
-            }),
+            Row(
+              children: [
+                Expanded(
+                  child: buildDropdown("Category", categories, selectedCategory, (String? value) {
+                    setState(() {
+                      selectedCategory = value!;
+                      checkScholarshipEligibility();
+                    });
+                  }),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: buildDropdown("Department", departments, selectedDepartment, (String? value) {
+                    setState(() {
+                      selectedDepartment = value!;
+                    });
+                  }),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: buildDropdown("Division", divisions, selectedDivision, (String? value) {
+                    setState(() {
+                      selectedDivision = value!;
+                    });
+                  }),
+                ),
+              ],
+            ),
             const SizedBox(height: 10),
-
-            buildDropdown("Department", departments, selectedDepartment, (String? value) {
-              setState(() {
-                selectedDepartment = value!;
-              });
-            }),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text("Year: $admissionYear", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
             const SizedBox(height: 10),
-
-            buildDropdown("Division", divisions, selectedDivision, (String? value) {
-              setState(() {
-                selectedDivision = value!;
-              });
-            }),
-            const SizedBox(height: 10),
-
-            Text("Year: $admissionYear", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 20),
 
             SizedBox(
               width: double.infinity,
@@ -165,58 +165,40 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
                 child: const Text("Admit Student", style: TextStyle(fontSize: 18, color: Colors.white)),
               ),
             ),
-            const SizedBox(height: 20),
 
-            if (studentId.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.all(16),
-                margin: const EdgeInsets.only(top: 10),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blueAccent),
-                ),
-                child: Column(
-                  children: [
-                    const Text(
-                      "✅ Student Admitted!",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text("Generated Student ID:"),
-                    Text(
-                      studentId,
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blueAccent),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Division: $selectedDivision",
-                      style: const TextStyle(fontSize: 16, color: Colors.black87),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: goToFeesPage,
-                      icon: const Icon(Icons.arrow_forward),
-                      label: const Text("Go to Fees Payment"),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
-                    ),
-                  ],
-                ),
+            if (studentIdController.text.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: goToFeesPage,
+                icon: const Icon(Icons.arrow_forward),
+                label: const Text("Proceed to Fees Payment"),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
               ),
+            ],
           ],
         ),
       ),
     );
   }
 
-  Widget buildTextField(TextEditingController controller, String label, IconData icon, [TextInputType type = TextInputType.text]) {
+  // ✅ Updated to support 4 arguments (with readOnly as optional positional)
+  Widget buildTextField(
+    TextEditingController controller,
+    String label,
+    IconData icon, [
+    TextInputType type = TextInputType.text,
+    bool readOnly = false,
+  ]) {
     return TextField(
       controller: controller,
+      readOnly: readOnly,
       keyboardType: type,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: Colors.blueAccent),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       ),
     );
   }
@@ -226,6 +208,8 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
@@ -235,7 +219,7 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
           items: items.map((String value) {
             return DropdownMenuItem<String>(
               value: value,
-              child: Text(value),
+              child: Text(value, style: const TextStyle(fontSize: 14)),
             );
           }).toList(),
         ),

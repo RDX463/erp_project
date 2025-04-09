@@ -78,14 +78,12 @@ class AdminLogin(BaseModel):
 
 # 🔹 Student Models
 class StudentAdmission(BaseModel):
-    name: str
     email: EmailStr
     phone: str
     category: str  # OBC, SC, NT, ST, OPEN
     allotment_number: str
     department: str  # COM, AIDS, MECH, ENTC, CIVIL
     division: str  # Example: A, B, C, D
-    roll_no: int  # <-- Add this
 
 class StudentFormSubmission(BaseModel):
     student_id: str
@@ -136,11 +134,21 @@ async def admin_login(admin: AdminLogin):
     return {"status": "success", "message": "Admin login successful"}
 
 # 🔹 Generate a unique Student ID
-def generate_student_id(department: str, roll_no: int):
+async def generate_student_id(department: str, division: str) -> tuple[str, int]:
     clg_code = "4088"
     today = datetime.now().strftime("%d%m%Y")
-    roll_str = f"{roll_no:02d}"  # Pad with leading zeroes if necessary
-    return f"{clg_code}{department.upper()}{today}{roll_str}"
+
+    # Get max roll number for this dept + division
+    last_student = await students_collection.find(
+        {"department": department, "division": division}
+    ).sort("roll_no", -1).limit(1).to_list(1)
+
+    next_roll = (last_student[0]["roll_no"] + 1) if last_student else 1
+    roll_str = f"{next_roll:02d}"
+
+    student_id = f"{clg_code}{department.upper()}{today}{roll_str}"
+    return student_id, next_roll
+
 
 
 # 🔹 Generate a unique form link
@@ -170,13 +178,12 @@ def send_email(email: str, name: str, form_link: str):
 # ✅ STUDENT: Admission API
 @app.post("/admit_student")
 async def admit_student(student: StudentAdmission):
-    student_id = generate_student_id(student.department, student.roll_no)
+    student_id, roll_no = await generate_student_id(student.department, student.division)
     scholarship_eligible = student.category.lower() != "open"
-    form_link = generate_form_link(student_id)
+    form_link = f"http://127.0.0.1:5500?student_id={student_id}"  # Optional: include student_id
 
     new_student = {
         "student_id": student_id,
-        "name": student.name,
         "email": student.email,
         "phone": student.phone,
         "category": student.category,
@@ -184,22 +191,19 @@ async def admit_student(student: StudentAdmission):
         "allotment_number": student.allotment_number,
         "year": "FE",
         "department": student.department,
+        "division": student.division,
         "form_link": form_link,
         "form_completed": False,
-        "created_at": datetime.utcnow(),
-        "division": student.division
+        "roll_no": roll_no,
+        "created_at": datetime.utcnow()
     }
 
     await students_collection.insert_one(new_student)
 
-    # Send email with form link
-    email_sent = send_email(student.email, student.name, form_link)
-    
-    if not email_sent:
-        return {"status": "error", "message": "Student admitted, but email failed to send"}
+    # Optionally send email here
+    logging.info(f"✅ Student Admitted: ID={student_id}, Roll={roll_no}")
+    return {"status": "success", "student_id": student_id, "form_link": form_link}
 
-    logging.info(f"✅ Student Admitted: {student.name} (ID: {student_id})")
-    return {"status": "success", "message": "Student admitted successfully", "student_id": student_id, "form_link": form_link}
 
 # ✅ STUDENT: Form Submission API
 @app.post("/submit_student_form")
@@ -297,7 +301,7 @@ async def get_payment_details(student_id: str):
 
 @app.get("/get_all_fees")
 async def get_all_fees():
-    students = await students_collection.find({}, {"_id": 0, "student_id": 1, "name": 1, "scholarship_eligible": 1}).to_list(length=None)
+    students = await students_collection.find({}, {"_id": 0, "student_id": 1, "scholarship_eligible": 1}).to_list(length=None)
 
     fees_data = []
     for student in students:
@@ -311,13 +315,13 @@ async def get_all_fees():
 
         fees_data.append({
             "student_id": student["student_id"],
-            "name": student["name"],
             "total_fees": payable_fees,
             "amount_paid": amount_paid,
             "remaining_fees": remaining_fees
         })
 
     return {"status": "success", "students": fees_data}
+
 
 @app.post("/send_fee_reminder")
 async def send_fee_reminder(data: dict):
@@ -632,6 +636,51 @@ async def add_faculty(faculty: Faculty):
         return {"status": "success", "message": "Faculty added and email sent"}
     else:
         raise HTTPException(status_code=500, detail="Faculty added, but email failed")
+    
+@app.get("/validate_student_id/{student_id}")
+async def validate_student_id(student_id: str):
+    try:
+        # Check if student_id exists in main student collection
+        student_exists = await students_collection.find_one({"student_id": student_id})
+        
+        if not student_exists:
+            return {"status": "error", "message": "❌ Invalid Student ID. Contact Main Control Center."}
+
+        # Now try fetching from the 'admissions' collection
+        admission = await db.admissions.find_one({"studentId": student_id}, {"_id": 0})
+
+        if not admission:
+            return {"status": "pending", "message": "⚠️ Student ID is valid, but admission form is not submitted yet."}
+
+        return {"status": "success", "student_data": admission}
+
+    except Exception as e:
+        return {"status": "error", "message": f"Server Error: {str(e)}"}
+    
+@app.post("/update_admission_form")
+async def update_admission_form(data: dict = Body(...)):
+    student_id = data.get("studentId")
+    if not student_id:
+        return {"status": "error", "message": "Student ID is missing"}
+
+    result = await db.admissions.update_one(
+        {"studentId": student_id},
+        {"$set": {
+            "name": data["name"],
+            "dob": data["dob"],
+            "address": data["address"],
+            "fatherName": data["fatherName"],
+            "motherName": data["motherName"],
+            "marks10": data["marks10"],
+            "marks12": data["marks12"],
+        }}
+    )
+
+    if result.modified_count == 1:
+        return {"status": "success", "message": "Admission form updated"}
+    else:
+        return {"status": "error", "message": "No changes made or form not found"}
+
 
 # API Endpoint to Fetch All Faculty
 @app.get("/get_faculty")

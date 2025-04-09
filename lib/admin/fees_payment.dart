@@ -49,7 +49,6 @@ class _FeesPaymentPageState extends State<FeesPaymentPage> {
     setState(() {
       filteredStudents = studentsFees
           .where((student) =>
-              student["name"].toLowerCase().contains(query) ||
               student["student_id"].toLowerCase().contains(query))
           .toList();
     });
@@ -102,7 +101,7 @@ class _FeesPaymentPageState extends State<FeesPaymentPage> {
                   TextField(
                     controller: searchController,
                     decoration: InputDecoration(
-                      hintText: "Search by name or student ID...",
+                      hintText: "Search by student ID...",
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
@@ -125,13 +124,12 @@ class _FeesPaymentPageState extends State<FeesPaymentPage> {
                           child: ListTile(
                             contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                             title: Text(
-                              student["name"],
+                              "Student ID: ${student["student_id"]}",
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                             ),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text("Student ID: ${student["student_id"]}", style: TextStyle(color: Colors.grey[700])),
                                 Text("Total Fees: ₹${student["total_fees"]}"),
                                 Text("Paid: ₹${student["amount_paid"]}", style: const TextStyle(color: Colors.green)),
                                 Text(
