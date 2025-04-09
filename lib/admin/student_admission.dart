@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'student_fees_pay.dart'; // Import the Fees Payment Page
+import 'student_fees_pay.dart';
 
 class StudentAdmissionPage extends StatefulWidget {
   const StudentAdmissionPage({super.key});
@@ -16,24 +15,19 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController allotmentController = TextEditingController();
+  final TextEditingController rollNoController = TextEditingController();
 
   String selectedCategory = "OPEN";
   String selectedDepartment = "COM";
-  String selectedDivision = "A"; // ✅ New Division Field
-  String studentId = "";  
+  String selectedDivision = "A";
+  String studentId = "";
   bool isScholarshipApplicable = false;
+  bool isAdmitted = false;
 
   final List<String> categories = ["OBC", "SC", "NT", "ST", "OPEN"];
   final List<String> departments = ["COM", "AIDS", "MECH", "ENTC", "CIVIL"];
-  final List<String> divisions = ["A", "B", "C", "D"]; // ✅ New Division Options
+  final List<String> divisions = ["A", "B", "C", "D"];
   final String admissionYear = "FE";
-
-  void generateStudentId() {
-    final random = Random();
-    setState(() {
-      studentId = "STU${random.nextInt(9000) + 1000}"; // Random 4-digit Student ID
-    });
-  }
 
   void checkScholarshipEligibility() {
     setState(() {
@@ -45,12 +39,12 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
     if (nameController.text.isEmpty ||
         emailController.text.isEmpty ||
         phoneController.text.isEmpty ||
-        allotmentController.text.isEmpty) {
+        allotmentController.text.isEmpty ||
+        rollNoController.text.isEmpty) {
       _showDialog("Error", "All fields are required.");
       return;
     }
 
-    generateStudentId();
     checkScholarshipEligibility();
 
     const String apiUrl = "http://localhost:5000/admit_student";
@@ -66,7 +60,8 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
           "category": selectedCategory,
           "allotment_number": allotmentController.text,
           "department": selectedDepartment,
-          "division": selectedDivision // ✅ Sending Division to Backend
+          "division": selectedDivision,
+          "roll_no": int.parse(rollNoController.text),
         }),
       );
 
@@ -75,18 +70,8 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
       if (response.statusCode == 200) {
         setState(() {
           studentId = responseBody["student_id"];
+          isAdmitted = true;
         });
-
-        // ✅ Navigate to Fees Payment Page after admission success
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => StudentFeesPayPage(
-              studentId: studentId,
-              isScholarshipApplicable: isScholarshipApplicable,
-            ),
-          ),
-        );
       } else {
         _showDialog("Error", responseBody["message"] ?? "Failed to admit student.");
       }
@@ -113,6 +98,18 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
     );
   }
 
+  void goToFeesPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => StudentFeesPayPage(
+          studentId: studentId,
+          isScholarshipApplicable: isScholarshipApplicable,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -132,6 +129,8 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
             const SizedBox(height: 10),
             buildTextField(allotmentController, "Allotment Number", Icons.confirmation_number),
             const SizedBox(height: 10),
+            buildTextField(rollNoController, "Roll Number", Icons.format_list_numbered, TextInputType.number),
+            const SizedBox(height: 10),
 
             buildDropdown("Category", categories, selectedCategory, (String? value) {
               setState(() {
@@ -148,7 +147,7 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
             }),
             const SizedBox(height: 10),
 
-            buildDropdown("Division", divisions, selectedDivision, (String? value) { 
+            buildDropdown("Division", divisions, selectedDivision, (String? value) {
               setState(() {
                 selectedDivision = value!;
               });
@@ -170,24 +169,36 @@ class _StudentAdmissionPageState extends State<StudentAdmissionPage> {
 
             if (studentId.isNotEmpty)
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(top: 10),
                 decoration: BoxDecoration(
                   color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blueAccent),
                 ),
                 child: Column(
                   children: [
                     const Text(
-                      "Student ID Generated:",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      "✅ Student Admitted!",
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
+                    const SizedBox(height: 8),
+                    const Text("Generated Student ID:"),
                     Text(
                       studentId,
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue),
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blueAccent),
                     ),
+                    const SizedBox(height: 8),
                     Text(
-                      "Division: $selectedDivision", // ✅ Display Division
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
+                      "Division: $selectedDivision",
+                      style: const TextStyle(fontSize: 16, color: Colors.black87),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: goToFeesPage,
+                      icon: const Icon(Icons.arrow_forward),
+                      label: const Text("Go to Fees Payment"),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
                     ),
                   ],
                 ),

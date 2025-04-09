@@ -85,6 +85,7 @@ class StudentAdmission(BaseModel):
     allotment_number: str
     department: str  # COM, AIDS, MECH, ENTC, CIVIL
     division: str  # Example: A, B, C, D
+    roll_no: int  # <-- Add this
 
 class StudentFormSubmission(BaseModel):
     student_id: str
@@ -135,8 +136,12 @@ async def admin_login(admin: AdminLogin):
     return {"status": "success", "message": "Admin login successful"}
 
 # 🔹 Generate a unique Student ID
-def generate_student_id():
-    return "STU" + ''.join(random.choices(string.digits, k=6))
+def generate_student_id(department: str, roll_no: int):
+    clg_code = "4088"
+    today = datetime.now().strftime("%d%m%Y")
+    roll_str = f"{roll_no:02d}"  # Pad with leading zeroes if necessary
+    return f"{clg_code}{department.upper()}{today}{roll_str}"
+
 
 # 🔹 Generate a unique form link
 def generate_form_link(student_id):
@@ -165,7 +170,7 @@ def send_email(email: str, name: str, form_link: str):
 # ✅ STUDENT: Admission API
 @app.post("/admit_student")
 async def admit_student(student: StudentAdmission):
-    student_id = generate_student_id()
+    student_id = generate_student_id(student.department, student.roll_no)
     scholarship_eligible = student.category.lower() != "open"
     form_link = generate_form_link(student_id)
 
