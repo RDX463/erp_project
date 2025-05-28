@@ -66,7 +66,7 @@ class StudentFeesPayment(BaseModel):
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 SMTP_EMAIL = "balsarafrohan627@gmail.com"  # Replace with your email
-SMTP_PASSWORD = "zobi sxvl pjfv cneu"  # Replace with your email password
+SMTP_PASSWORD = "XXXX XXXX XXXX XXXX"  # Replace with your email password
 
 # 🔹 Admin Models
 class AdminSignup(BaseModel):
