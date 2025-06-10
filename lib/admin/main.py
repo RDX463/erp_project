@@ -1,5 +1,6 @@
 import smtplib
 import json
+import re
 from typing import List
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -44,6 +45,7 @@ try:
     client = AsyncIOMotorClient("mongodb://localhost:27017")
     db = client.studentERP
     admins_collection = db.admins
+    admissions_collection = db.admissions
     students_collection = db.students
     payments_collection = db.payments
     queries_collection = db.document_queries
@@ -149,8 +151,6 @@ async def generate_student_id(department: str, division: str) -> tuple[str, int]
     student_id = f"{clg_code}{department.upper()}{today}{roll_str}"
     return student_id, next_roll
 
-
-
 # 🔹 Generate a unique form link
 def generate_form_link(student_id):
     return "http://127.0.0.1:5500"
@@ -158,26 +158,47 @@ def generate_form_link(student_id):
 # 🔹 Send email to student
 def send_email(email: str, name: str, form_link: str):
     try:
-        msg = MIMEText(f"Hello {name},\n\nPlease complete your admission form by clicking the link below:\n{form_link}\n\nThank you.")
+        # Validate email format
+        if not email or not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            logging.error(f"Invalid email address: {email}")
+            return False
+
+        msg = MIMEText(
+            f"Hello {name},\n\nPlease complete your admission form by clicking the link below:\n{form_link}\n\nThank you.",
+            "plain",  # Explicitly set to plain text
+            "utf-8"
+        )
         msg["Subject"] = "Complete Your Admission Form"
         msg["From"] = SMTP_EMAIL
         msg["To"] = email
 
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-        server.login(SMTP_EMAIL, SMTP_PASSWORD)
-        server.sendmail(SMTP_EMAIL, email, msg.as_string())
-        server.quit()
-        
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_EMAIL, SMTP_PASSWORD)
+            server.sendmail(SMTP_EMAIL, [email], msg.as_string())
+
         logging.info(f"📧 Email sent to {email}")
         return True
+    except smtplib.SMTPAuthenticationError as e:
+        logging.error(f"SMTP Authentication failed: {e}")
+        return False
+    except smtplib.SMTPRecipientsRefused as e:
+        logging.error(f"Recipient email rejected: {email}, Error: {e}")
+        return False
+    except smtplib.SMTPException as e:
+        logging.error(f"SMTP error: {e}")
+        return False
     except Exception as e:
-        logging.error(f"❌ Email sending failed: {e}")
+        logging.error(f"Unexpected error sending email to {email}: {e}")
         return False
 
 # ✅ STUDENT: Admission API
 @app.post("/admit_student")
 async def admit_student(student: StudentAdmission):
+    # Validate email
+    if not student.email or not re.match(r"[^@]+@[^@]+\.[^@]+", student.email):
+        raise HTTPException(status_code=400, detail="Valid email address is required")
+    
     student_id, roll_no = await generate_student_id(student.department, student.division)
     scholarship_eligible = student.category.lower() != "open"
     form_link = f"http://127.0.0.1:5500?student_id={student_id}"  # Optional: include student_id
@@ -200,9 +221,18 @@ async def admit_student(student: StudentAdmission):
 
     await students_collection.insert_one(new_student)
 
-    # Optionally send email here
+# Send admission email
+    email_sent = send_email(student.email,"Student", form_link)
+    if not email_sent:
+        logging.warning(f"Could not send email to {student.email}")
+
     logging.info(f"✅ Student Admitted: ID={student_id}, Roll={roll_no}")
-    return {"status": "success", "student_id": student_id, "form_link": form_link}
+    return {
+        "status": "success",
+        "student_id": student_id,
+        "form_link": form_link,
+        "email_sent": email_sent
+    }
 
 
 # ✅ STUDENT: Form Submission API
@@ -249,13 +279,9 @@ async def pay_fees(fees_data: StudentFeesPayment):
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
 
-    # Determine total fees based on caste
-    caste = student.get("caste", "non-open").lower()
-    valid_castes = {"open", "obc", "sc", "st", "non-open"}
-    if caste not in valid_castes:
-        logging.warning(f"Invalid caste '{caste}' for student_id={fees_data.student_id}, defaulting to non-open")
-        caste = "non-open"
-    total_fees = 96000 if caste == "open" else 53000
+    # Determine total fees based on category
+    category = student.get("category", "non-open").lower()
+    total_fees = 96000 if category == "open" else 53000
 
     # Calculate payable fees with scholarship
     scholarship_eligible = student.get("scholarship_eligible", False)
@@ -275,7 +301,7 @@ async def pay_fees(fees_data: StudentFeesPayment):
         logging.warning(f"Overpayment detected: student_id={fees_data.student_id}, excess_amount=₹{new_total_paid - payable_fees}")
 
     # Log values for debugging
-    logging.info(f"Student: {fees_data.student_id}, Caste: {caste}, Total Fees: ₹{total_fees}, Scholarship: ₹{scholarship_amount}, Payable: ₹{payable_fees}, Already Paid: ₹{already_paid}, Attempted Payment: ₹{fees_data.amount_paid}, New Total Paid: ₹{new_total_paid}")
+    logging.info(f"Student: {fees_data.student_id}, Category: {category}, Total Fees: ₹{total_fees}, Scholarship: ₹{scholarship_amount}, Payable: ₹{payable_fees}, Already Paid: ₹{already_paid}, Attempted Payment: ₹{fees_data.amount_paid}, New Total Paid: ₹{new_total_paid}")
 
     # Update or insert payment record
     if existing_payment:
@@ -284,6 +310,7 @@ async def pay_fees(fees_data: StudentFeesPayment):
             {"$set": {
                 "amount_paid": new_total_paid,
                 "remaining_fees": remaining_fees,
+                "excess_amount": max(0, new_total_paid - payable_fees),
                 "last_payment_date": datetime.utcnow()
             }}
         )
@@ -292,6 +319,7 @@ async def pay_fees(fees_data: StudentFeesPayment):
             "student_id": fees_data.student_id,
             "amount_paid": fees_data.amount_paid,
             "remaining_fees": remaining_fees,
+            "excess_amount": max(0, new_total_paid - payable_fees),
             "last_payment_date": datetime.utcnow()
         })
 
@@ -350,7 +378,7 @@ async def send_fee_reminder(data: dict):
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
 
-    email_sent = send_email(student["email"], student["name"], "Reminder: Pending Fees Payment")
+    email_sent = send_email(student["email"], "Student", "Reminder: Pending Fees Payment")
 
     if email_sent:
         logging.info(f"📧 Reminder Email sent to {student['email']}")
@@ -369,7 +397,12 @@ async def get_scholarship_students():
 
         # Fetch payment details for each student
         for student in students:
-            payment = await payments_collection.find_one({"student_id": student["student_id"]}, {"_id": 0})
+            payment = await payments_collection.find_one({"student_id": student["student_id"]}, {"_id": 0,"name":1})
+            admission = await admissions_collection.find_one(
+                {"student_id": student["student_id"]},
+                {"_id": 0, "name": 1}
+            )
+            student["name"] = admission["name"] if admission and admission.get("name") else "Unknown"
             student["total_fees"] = 96000 - (43000 if student.get("scholarship_eligible", False) else 0)
             student["amount_paid"] = payment["amount_paid"] if payment else 0
             student["remaining_fees"] = student["total_fees"] - student["amount_paid"]
