@@ -1,71 +1,100 @@
 import 'package:flutter/material.dart';
+import 'student_profile.dart';
+import 'document_upload.dart';
 
 class StudentDashboard extends StatelessWidget {
   final Map<String, dynamic> student;
 
   const StudentDashboard({super.key, required this.student});
 
-  String getStringValue(dynamic value) {
-    if (value is String) {
-      return value;
-    } else if (value is List && value.isNotEmpty) {
-      return value[0].toString();
-    } else if (value == null) {
-      return 'N/A';
-    } else {
-      return value.toString();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    print('Student map in dashboard: $student');
     return Scaffold(
       appBar: AppBar(
-        title: Text("Welcome, ${getStringValue(student['name'])}"),
+        title: const Text('Student Dashboard'),
+        backgroundColor: Theme.of(context).primaryColor,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              Navigator.pushNamed(
+                context,
+                '/student_profile',
+                arguments: student,
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              Navigator.pushReplacementNamed(context, '/student_login');
+            },
+          ),
+        ],
       ),
-      body: Center(
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Student Dashboard',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            Text(
+              'Welcome, ${student['name']}',
+              style: Theme.of(context).textTheme.displayLarge,
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(
-                  context,
-                  '/student_profile',
-                  arguments: student,
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Quick Actions',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DocumentUpload(student: student),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.upload_file),
+                      label: const Text('Upload Document'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/student_profile',
+                          arguments: student,
+                        );
+                      },
+                      icon: const Icon(Icons.person),
+                      label: const Text('View Profile'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              child: const Text(
-                'View Profile',
-                style: TextStyle(fontSize: 18),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushReplacementNamed(context, '/student_login');
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Logout',
-                style: TextStyle(fontSize: 18),
               ),
             ),
           ],

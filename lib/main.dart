@@ -4,40 +4,49 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_swiper_view/flutter_swiper_view.dart';
 import 'admin/admin_login.dart';
+import 'admin/student_module.dart';
+import 'admin/student_admission.dart';
+import 'admin/fees_payment.dart';
+import 'admin/scholarship_eligibility.dart';
+import 'admin/student_promotion.dart';
+import 'admin/student_documents.dart';
 import 'faculty/faculty_login.dart';
 import 'student/student_login.dart';
 import 'student/student_dashboard.dart';
 import 'student/student_profile.dart';
+import 'student/document_upload.dart';
 
 void main() {
-  runApp(CollegeERPApp());
+  runApp(const CollegeERPApp());
 }
 
 class CollegeERPApp extends StatelessWidget {
+  const CollegeERPApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Open Sans',
-        primaryColor: Color(0xFF00796B),
-        secondaryHeaderColor: Color(0xFFFF6F61),
+        primaryColor: const Color(0xFF00796B),
+        secondaryHeaderColor: const Color(0xFFFF6F61),
         colorScheme: ColorScheme.fromSwatch().copyWith(
-          primary: Color(0xFF00796B),
-          secondary: Color(0xFFFF6F61),
-          background: Color(0xFFE0F7FA),
-          surface: Color(0xFFFFFFFF),
+          primary: const Color(0xFF00796B),
+          secondary: const Color(0xFFFF6F61),
+          background: const Color(0xFFE0F7FA),
+          surface: const Color(0xFFFFFFFF),
           onPrimary: Colors.white,
           onSecondary: Colors.black,
           onBackground: Colors.black,
           onSurface: Colors.black,
         ),
-        textTheme: TextTheme(
+        textTheme: const TextTheme(
           displayLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
           bodyLarge: TextStyle(fontSize: 16, color: Colors.black87),
           bodyMedium: TextStyle(fontSize: 14, color: Colors.black54),
         ),
-        buttonTheme: ButtonThemeData(
+        buttonTheme: const ButtonThemeData(
           buttonColor: Color(0xFF00796B),
           textTheme: ButtonTextTheme.primary,
         ),
@@ -48,10 +57,16 @@ class CollegeERPApp extends StatelessWidget {
           elevation: 4,
         ),
       ),
-      home: HomePage(),
+      home: const HomePage(),
       routes: {
-        '/admin_login': (context) => AdminLoginPage(),
-        '/faculty_login': (context) => FacultyLoginPage(),
+        '/admin_login': (context) => const AdminLoginPage(),
+        '/student_module': (context) => const StudentModule(),
+        '/student_admission': (context) => const StudentAdmissionPage(),
+        '/fees_payment': (context) => const FeesPaymentPage(),
+        '/scholarship_eligibility': (context) => const ScholarshipEligibilityPage(),
+        '/student_promotion': (context) => const StudentPromotionPage(),
+        '/student_documents': (context) => const StudentDocuments(),
+        '/faculty_login': (context) => const FacultyLoginPage(),
         '/student_login': (context) => const StudentLoginPage(),
         '/student_dashboard': (context) => StudentDashboard(
               student: ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>,
@@ -59,15 +74,20 @@ class CollegeERPApp extends StatelessWidget {
         '/student_profile': (context) => StudentProfile(
               student: ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>,
             ),
+        '/document_upload': (context) => DocumentUpload(
+              student: ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>,
+            ),
       },
       onUnknownRoute: (settings) {
-        return MaterialPageRoute(builder: (context) => HomePage());
+        return MaterialPageRoute(builder: (context) => const HomePage());
       },
     );
   }
 }
 
 class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
   @override
   _HomePageState createState() => _HomePageState();
 }
@@ -99,7 +119,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   void _addEventsWithAnimation() async {
     for (int i = 0; i < events.length; i++) {
-      await Future.delayed(Duration(milliseconds: 400));
+      await Future.delayed(const Duration(milliseconds: 400));
       if (mounted) {
         displayedEvents.add(events[i]);
         _listKey.currentState?.insertItem(displayedEvents.length - 1);
@@ -112,7 +132,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(56),
+        preferredSize: const Size.fromHeight(56),
         child: AppBar(
           backgroundColor: Theme.of(context).primaryColor,
           elevation: 4,
@@ -136,7 +156,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                             width: 150,
                             color: Colors.red.shade100,
                             alignment: Alignment.center,
-                            padding: EdgeInsets.all(4),
+                            padding: const EdgeInsets.all(4),
                             child: Text(
                               "Error\nLoading Logo\nCheck Console",
                               textAlign: TextAlign.center,
@@ -146,8 +166,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         },
                       ),
                     ),
-                    SizedBox(width: 10),
-                    Text(
+                    const SizedBox(width: 10),
+                    const Text(
                       "DTE Code: EN6732",
                       style: TextStyle(
                         fontSize: 16,
@@ -157,7 +177,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   ],
                 ),
               ),
-              Spacer(),
+              const Spacer(),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 5.0),
                 child: Row(
@@ -203,11 +223,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               style: Theme.of(context).textTheme.displayLarge,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           AnimatedList(
             key: _listKey,
             shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
+            physics: const NeverScrollableScrollPhysics(),
             initialItemCount: displayedEvents.length,
             itemBuilder: (context, index, animation) {
               return _buildAnimatedItem(displayedEvents[index], animation);
@@ -223,17 +243,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       opacity: animation,
       child: SlideTransition(
         position: animation.drive(Tween<Offset>(
-          begin: Offset(0.5, 0),
+          begin: const Offset(0.5, 0),
           end: Offset.zero,
         ).chain(CurveTween(curve: Curves.easeOutCubic))),
         child: Card(
-          margin: EdgeInsets.symmetric(vertical: 7, horizontal: 5),
+          margin: const EdgeInsets.symmetric(vertical: 7, horizontal: 5),
           child: Padding(
-            padding: EdgeInsets.all(14.0),
+            padding: const EdgeInsets.all(14.0),
             child: Row(
               children: [
                 Icon(Icons.campaign_outlined, color: Theme.of(context).primaryColor, size: 22),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     event,
@@ -258,8 +278,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             "📸 Photo Gallery",
             style: Theme.of(context).textTheme.displayLarge,
           ),
-          SizedBox(height: 8),
-          Container(
+          const SizedBox(height: 8),
+          SizedBox(
             height: 200,
             child: Swiper(
               itemBuilder: (BuildContext context, int index) {
@@ -272,8 +292,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 );
               },
               itemCount: galleryImages.length,
-              pagination: SwiperPagination(),
-              control: SwiperControl(),
+              pagination: const SwiperPagination(),
+              control: const SwiperControl(),
               autoplay: true,
               viewportFraction: 0.25,
               scale: 0.9,
@@ -294,10 +314,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             "🏫 Engineering Departments",
             style: Theme.of(context).textTheme.displayLarge,
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           ListView(
             shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
+            physics: const NeverScrollableScrollPhysics(),
             children: [
               _departmentCard("Computer Science Engineering", Icons.computer),
               _departmentCard("Mechanical Engineering", Icons.build),
@@ -313,13 +333,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Widget _departmentCard(String departmentName, IconData icon) {
     return Card(
-      margin: EdgeInsets.symmetric(vertical: 5),
+      margin: const EdgeInsets.symmetric(vertical: 5),
       child: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
             Icon(icon, size: 40, color: Theme.of(context).primaryColor),
-            SizedBox(width: 12),
+            const SizedBox(width: 12),
             Text(
               departmentName,
               style: Theme.of(context).textTheme.bodyLarge,
@@ -332,16 +352,16 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Widget _navButton(BuildContext context, String text, VoidCallback onPressed) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: TextButton(
         onPressed: onPressed,
         style: TextButton.styleFrom(
           foregroundColor: Colors.white,
-          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         ),
         child: Text(
           text,
-          style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500),
+          style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500),
         ),
       ),
     );
@@ -350,9 +370,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Widget _loginMenu(BuildContext context) {
     return PopupMenuButton<String>(
       tooltip: "Login Options",
-      offset: Offset(0, 45),
+      offset: const Offset(0, 45),
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -360,35 +380,35 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         child: Row(
           children: [
             Icon(Icons.login, color: Theme.of(context).primaryColor, size: 18),
-            SizedBox(width: 5),
+            const SizedBox(width: 5),
             Text("Login", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor)),
-            Icon(Icons.arrow_drop_down, color: Theme.of(context).primaryColor, size: 20),
+            const Icon(Icons.arrow_drop_down, color: Color(0xFF00796B), size: 20),
           ],
         ),
       ),
       itemBuilder: (context) => [
-        PopupMenuItem(value: "StudentLogin", child: Text("Student Login")),
-        PopupMenuItem(value: "FacultyLogin", child: Text("Faculty Login")),
-        PopupMenuItem(value: "AdminLogin", child: Text("Admin Login")),
+        const PopupMenuItem(value: "StudentLogin", child: Text("Student Login")),
+        const PopupMenuItem(value: "FacultyLogin", child: Text("Faculty Login")),
+        const PopupMenuItem(value: "AdminLogin", child: Text("Admin Login")),
       ],
       onSelected: (value) {
         switch (value) {
           case "AdminLogin":
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => AdminLoginPage()),
+              MaterialPageRoute(builder: (context) => const AdminLoginPage()),
             );
             break;
           case "FacultyLogin":
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => FacultyLoginPage()),
+              MaterialPageRoute(builder: (context) => const FacultyLoginPage()),
             );
             break;
           case "StudentLogin":
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => StudentLoginPage()),
+              MaterialPageRoute(builder: (context) => const StudentLoginPage()),
             );
             break;
         }
@@ -422,7 +442,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
             ],
           ),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
         ],
       ),
     );

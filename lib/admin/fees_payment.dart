@@ -24,18 +24,24 @@ class _FeesPaymentPageState extends State<FeesPaymentPage> {
 
   // 🔹 Fetch student fees data from backend
   Future<void> fetchFeesData() async {
-    const String apiUrl = "http://localhost:5000/get_all_fees";
+    const String apiUrl = "http://localhost:5000/get_all_fees"; // Corrected URL
 
     try {
       final response = await http.get(Uri.parse(apiUrl));
       if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
         setState(() {
-          studentsFees = List<Map<String, dynamic>>.from(json.decode(response.body)["students"]);
+          studentsFees = (json["students"] as List).map((student) => {
+                "student_id": student["student_id"],
+                "total_fees": (student["total_fees"] as num).toInt(),
+                "amount_paid": (student["amount_paid"] as num).toInt(),
+                "remaining_fees": (student["remaining_fees"] as num).toInt(),
+              }).toList();
           filteredStudents = studentsFees;
           isLoading = false;
         });
       } else {
-        throw Exception("Failed to load student fees data.");
+        throw Exception("Failed to load student fees data: ${response.statusCode}");
       }
     } catch (e) {
       setState(() => isLoading = false);
@@ -48,15 +54,14 @@ class _FeesPaymentPageState extends State<FeesPaymentPage> {
     String query = searchController.text.toLowerCase();
     setState(() {
       filteredStudents = studentsFees
-          .where((student) =>
-              student["student_id"].toLowerCase().contains(query))
+          .where((student) => student["student_id"].toLowerCase().contains(query))
           .toList();
     });
   }
 
   // 🔹 Send notification email
   Future<void> sendNotification(String studentId) async {
-    const String apiUrl = "http://localhost:5000/send_fee_reminder";
+    const String apiUrl = "http://localhost:5000/student/send_fee_reminder"; // Corrected endpoint
 
     try {
       final response = await http.post(
@@ -114,7 +119,7 @@ class _FeesPaymentPageState extends State<FeesPaymentPage> {
                       itemCount: filteredStudents.length,
                       itemBuilder: (context, index) {
                         var student = filteredStudents[index];
-                        int remainingFees = student["total_fees"] - student["amount_paid"];
+                        int remainingFees = student["remaining_fees"]; // Use precomputed value
                         bool hasPendingFees = remainingFees > 0;
 
                         return Card(

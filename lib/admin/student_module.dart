@@ -14,12 +14,12 @@ class StudentModule extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Student Module"),
-        backgroundColor: Colors.blueAccent,
-        automaticallyImplyLeading: false, // Removes default back button
+        backgroundColor: Theme.of(context).primaryColor,
+        automaticallyImplyLeading: false,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pop(context); // Back to previous screen
+            Navigator.pop(context);
           },
         ),
       ),
@@ -60,7 +60,7 @@ class StudentModule extends StatelessWidget {
             context,
             title: "Student Documents",
             icon: Icons.folder,
-            page: StudentDocuments(),
+            page: const StudentDocuments(),
           ),
         ],
       ),
@@ -72,9 +72,9 @@ class StudentModule extends StatelessWidget {
       elevation: 3,
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: ListTile(
-        leading: Icon(icon, color: Colors.blueAccent),
+        leading: Icon(icon, color: Theme.of(context).primaryColor),
         title: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        trailing: const Icon(Icons.arrow_forward_ios, color: Colors.blueAccent),
+        trailing: Icon(Icons.arrow_forward_ios, color: Theme.of(context).primaryColor),
         onTap: () {
           Navigator.push(context, MaterialPageRoute(builder: (context) => page));
         },

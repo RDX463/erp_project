@@ -64,22 +64,22 @@ class StudentProfile extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Father\'s Name: ${getStringValue(student['fathers name'])}',
+                      'Father\'s Name: ${getStringValue(student['fatherName'])}',
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Mother\'s Name: ${getStringValue(student['mothers name'])}',
+                      'Mother\'s Name: ${getStringValue(student['motherName'])}',
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '10th Marks: ${getStringValue(student['10th marks'])}',
+                      '10th Marks: ${getStringValue(student['marks10'])}',
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '12th Marks: ${getStringValue(student['12th marks'])}',
+                      '12th Marks: ${getStringValue(student['marks12'])}',
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
                     ),
                   ],

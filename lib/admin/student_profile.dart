@@ -24,21 +24,27 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
 
     try {
       final response = await http.get(Uri.parse(url));
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}'); // Debug response
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
-        if (jsonData['status'] == 'success') {
-          setState(() {
-            students = List<Map<String, dynamic>>.from(jsonData['students']);
-            _isLoading = false;
-          });
-        } else {
-          throw Exception("Unexpected data format");
-        }
+        setState(() {
+          students = (jsonData['students'] as List).map((student) => {
+                'student_id': student['student_id']?.toString() ?? 'N/A',
+                'email': student['email']?.toString() ?? 'N/A',
+                'phone': student['phone']?.toString() ?? 'N/A',
+                'department': student['department']?.toString() ?? 'N/A',
+                'year': student['year']?.toString() ?? 'N/A',
+              }).toList();
+          _isLoading = false;
+        });
+        print('Parsed students: $students'); // Debug parsed data
       } else {
-        throw Exception("Failed to load student data");
+        throw Exception("Failed to load student data: ${response.statusCode}");
       }
     } catch (e) {
-      _showErrorDialog("Error fetching data. Please check your connection.");
+      print('Error fetching data: $e'); // Debug error
+      _showErrorDialog("Error fetching data: $e");
       setState(() {
         _isLoading = false;
       });
@@ -54,97 +60,107 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         headers: {"Content-Type": "application/json"},
         body: json.encode({"updated_data": updatedData, "admin": adminName}),
       );
-
+      print('Update response: ${response.body}'); // Debug response
       if (response.statusCode == 200) {
         _showSuccessDialog("Student data updated successfully!");
-        _fetchStudentData();
+        await _fetchStudentData();
       } else {
-        _showErrorDialog("Failed to update student data.");
+        _showErrorDialog("Failed to update student data: ${response.body}");
       }
     } catch (e) {
-      _showErrorDialog("Error updating student data.");
+      _showErrorDialog("Error updating student data: $e");
     }
   }
 
   Future<void> _checkAdmissionForm(String studentId) async {
-  final url = 'http://localhost:5000/validate_student_id/$studentId';
+    final url = 'http://localhost:5000/validate_student_id/$studentId';
 
-  try {
-    final response = await http.get(Uri.parse(url));
-    final result = json.decode(response.body);
+    try {
+      final response = await http.get(Uri.parse(url));
+      print('Validate response: ${response.body}'); // Debug response
+      final result = json.decode(response.body);
 
-    if (response.statusCode == 200 && result['status'] == 'success') {
-      final data = result['student_data'];
+      if (response.statusCode == 200 && result['status'] == 'success') {
+        final data = result['student_data'];
 
-      // Controllers for editable fields
-      TextEditingController nameController = TextEditingController(text: data["name"]);
-      TextEditingController dobController = TextEditingController(text: data["dob"]);
-      TextEditingController addressController = TextEditingController(text: data["address"]);
-      TextEditingController fatherController = TextEditingController(text: data["fatherName"]);
-      TextEditingController motherController = TextEditingController(text: data["motherName"]);
-      TextEditingController marks10Controller = TextEditingController(text: data["marks10"].toString());
-      TextEditingController marks12Controller = TextEditingController(text: data["marks12"].toString());
+        // Controllers for editable fields
+        TextEditingController nameController = TextEditingController(text: data["name"]?.toString());
+        TextEditingController dobController = TextEditingController(text: data["dob"]?.toString());
+        TextEditingController addressController = TextEditingController(text: data["address"]?.toString());
+        TextEditingController fatherController = TextEditingController(text: data["fatherName"]?.toString());
+        TextEditingController motherController = TextEditingController(text: data["motherName"]?.toString());
+        TextEditingController marks10Controller = TextEditingController(text: data["marks10"]?.toString() ?? '');
+        TextEditingController marks12Controller = TextEditingController(text: data["marks12"]?.toString() ?? '');
 
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text("Edit Admission Info: $studentId"),
-          content: SingleChildScrollView(
-            child: Column(
-              children: [
-                TextField(controller: nameController, decoration: InputDecoration(labelText: "Name")),
-                TextField(controller: dobController, decoration: InputDecoration(labelText: "DOB")),
-                TextField(controller: addressController, decoration: InputDecoration(labelText: "Address")),
-                TextField(controller: fatherController, decoration: InputDecoration(labelText: "Father Name")),
-                TextField(controller: motherController, decoration: InputDecoration(labelText: "Mother Name")),
-                TextField(controller: marks10Controller, decoration: InputDecoration(labelText: "10th Marks"), keyboardType: TextInputType.number),
-                TextField(controller: marks12Controller, decoration: InputDecoration(labelText: "12th Marks"), keyboardType: TextInputType.number),
-              ],
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text("Edit Admission Info: $studentId"),
+            content: SingleChildScrollView(
+              child: Column(
+                children: [
+                  TextField(controller: nameController, decoration: InputDecoration(labelText: "Name")),
+                  TextField(controller: dobController, decoration: InputDecoration(labelText: "DOB")),
+                  TextField(controller: addressController, decoration: InputDecoration(labelText: "Address")),
+                  TextField(controller: fatherController, decoration: InputDecoration(labelText: "Father Name")),
+                  TextField(controller: motherController, decoration: InputDecoration(labelText: "Mother Name")),
+                  TextField(
+                    controller: marks10Controller,
+                    decoration: InputDecoration(labelText: "10th Marks"),
+                    keyboardType: TextInputType.number,
+                  ),
+                  TextField(
+                    controller: marks12Controller,
+                    decoration: InputDecoration(labelText: "12th Marks"),
+                    keyboardType: TextInputType.number,
+                  ),
+                ],
+              ),
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancel"),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final updateResponse = await http.post(
+                    Uri.parse("http://localhost:5000/update_admission_form"),
+                    headers: {"Content-Type": "application/json"},
+                    body: json.encode({
+                      "studentId": studentId,
+                      "name": nameController.text,
+                      "dob": dobController.text,
+                      "address": addressController.text,
+                      "fatherName": fatherController.text,
+                      "motherName": motherController.text,
+                      "marks10": int.tryParse(marks10Controller.text) ?? 0,
+                      "marks12": int.tryParse(marks12Controller.text) ?? 0,
+                    }),
+                  );
+                  print('Update admission response: ${updateResponse.body}'); // Debug response
+                  final updateResult = json.decode(updateResponse.body);
+                  Navigator.pop(context);
+
+                  if (updateResponse.statusCode == 200 && updateResult["status"] == "success") {
+                    _showSuccessDialog("Admission form updated successfully!");
+                  } else {
+                    _showErrorDialog(updateResult["message"] ?? "Update failed.");
+                  }
+                },
+                child: const Text("Save"),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final updateResponse = await http.post(
-                  Uri.parse("http://localhost:5000/update_admission_form"),
-                  headers: {"Content-Type": "application/json"},
-                  body: json.encode({
-                    "studentId": studentId,
-                    "name": nameController.text,
-                    "dob": dobController.text,
-                    "address": addressController.text,
-                    "fatherName": fatherController.text,
-                    "motherName": motherController.text,
-                    "marks10": int.tryParse(marks10Controller.text) ?? 0,
-                    "marks12": int.tryParse(marks12Controller.text) ?? 0,
-                  }),
-                );
-
-                final updateResult = json.decode(updateResponse.body);
-                Navigator.pop(context);
-
-                if (updateResponse.statusCode == 200 && updateResult["status"] == "success") {
-                  _showSuccessDialog("Admission form updated successfully!");
-                } else {
-                  _showErrorDialog(updateResult["message"] ?? "Update failed.");
-                }
-              },
-              child: const Text("Save"),
-            ),
-          ],
-        ),
-      );
-    } else {
-      _showErrorDialog(result['message'] ?? "Invalid or missing data. Contact Main Control Center.");
+        );
+      } else {
+        _showErrorDialog(result['message'] ?? "Invalid or missing data. Contact Main Control Center.");
+      }
+    } catch (e) {
+      print('Error validating admission form: $e'); // Debug error
+      _showErrorDialog("Error validating admission form: $e");
     }
-  } catch (e) {
-    _showErrorDialog("Error validating admission form: $e");
   }
-}
 
   void _showErrorDialog(String message) {
     showDialog(
@@ -155,8 +171,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text("OK", style: TextStyle(color: Colors.redAccent)),
-          ),
+            child: const Text("OK", style: TextStyle(color: Colors.redAccent)),)
         ],
       ),
     );
@@ -171,8 +186,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text("OK", style: TextStyle(color: Colors.green)),
-          ),
+            child: const Text("OK", style: TextStyle(color: Colors.green)),)
         ],
       ),
     );
@@ -213,7 +227,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                   "year": yearController.text,
                 };
                 _updateStudentData(updatedData, "Admin_Name");
-                Navigator.of(context).pop();
+                Navigator.pop(context);
               },
               child: const Text("Save"),
             ),
@@ -234,57 +248,62 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                children: [
-                  const Text(
-                    "All Students",
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: DataTable(
-                        columnSpacing: 16.0,
-                        columns: const [
-                          DataColumn(label: Text("Student ID")),
-                          DataColumn(label: Text("Email")),
-                          DataColumn(label: Text("Phone")),
-                          DataColumn(label: Text("Department")),
-                          DataColumn(label: Text("Year")),
-                          DataColumn(label: Text("Action")),
-                        ],
-                        rows: students.map((student) {
-                          return DataRow(cells: [
-                            DataCell(Text(student["student_id"])),
-                            DataCell(Text(student["email"])),
-                            DataCell(Text(student["phone"] ?? "N/A")),
-                            DataCell(Text(student["department"])),
-                            DataCell(Text(student["year"])),
-                            DataCell(Row(
-                              children: [
-                                ElevatedButton(
-                                  onPressed: () => _editStudent(student),
-                                  child: const Text("Edit"),
-                                ),
-                                const SizedBox(width: 6),
-                                ElevatedButton(
-                                  onPressed: () => _checkAdmissionForm(student["student_id"]),
-                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
-                                  child: const Text("Admission Info"),
-                                ),
-                              ],
-                            )),
-                          ]);
-                        }).toList(),
+          : students.isEmpty
+              ? const Center(child: Text("No students found", style: TextStyle(fontSize: 18)))
+              : Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    children: [
+                      const Text(
+                        "All Students",
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                       ),
-                    ),
+                      const SizedBox(height: 10),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.vertical,
+                            child: DataTable(
+                              columnSpacing: 16.0,
+                              columns: const [
+                                DataColumn(label: Text("Student ID")),
+                                DataColumn(label: Text("Email")),
+                                DataColumn(label: Text("Phone")),
+                                DataColumn(label: Text("Department")),
+                                DataColumn(label: Text("Year")),
+                                DataColumn(label: Text("Action")),
+                              ],
+                              rows: students.map((student) {
+                                return DataRow(cells: [
+                                  DataCell(Text(student["student_id"])),
+                                  DataCell(Text(student["email"])),
+                                  DataCell(Text(student["phone"])),
+                                  DataCell(Text(student["department"])),
+                                  DataCell(Text(student["year"])),
+                                  DataCell(Row(
+                                    children: [
+                                      ElevatedButton(
+                                        onPressed: () => _editStudent(student),
+                                        child: const Text("Edit"),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      ElevatedButton(
+                                        onPressed: () => _checkAdmissionForm(student["student_id"]),
+                                        style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+                                        child: const Text("Admission Info"),
+                                      ),
+                                    ],
+                                  )),
+                                ]);
+                              }).toList(),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
     );
   }
 }
