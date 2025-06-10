@@ -6,3 +6,4 @@ bcrypt
 pydantic[email]
 python-multipart
 google-cloud-dialogflow
+dotenv
