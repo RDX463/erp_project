@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:url_launcher/url_launcher.dart'; // Import url_launcher
-import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // Import Font Awesome
-import 'package:flutter_swiper_view/flutter_swiper_view.dart'; // Import flutter_swiper_view
+import 'package:url_launcher/url_launcher.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter_swiper_view/flutter_swiper_view.dart';
 import 'admin/admin_login.dart';
 import 'faculty/faculty_login.dart';
 import 'student/student_login.dart';
@@ -20,13 +20,13 @@ class CollegeERPApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Open Sans',
-        primaryColor: Color(0xFF00796B), // Dark teal
-        secondaryHeaderColor: Color(0xFFFF6F61), // Coral
+        primaryColor: Color(0xFF00796B),
+        secondaryHeaderColor: Color(0xFFFF6F61),
         colorScheme: ColorScheme.fromSwatch().copyWith(
-          primary: Color(0xFF00796B), // Primary color (Teal)
-          secondary: Color(0xFFFF6F61), // Secondary color (Coral)
-          background: Color(0xFFE0F7FA), // Light teal background
-          surface: Color(0xFFFFFFFF), // Surface color
+          primary: Color(0xFF00796B),
+          secondary: Color(0xFFFF6F61),
+          background: Color(0xFFE0F7FA),
+          surface: Color(0xFFFFFFFF),
           onPrimary: Colors.white,
           onSecondary: Colors.black,
           onBackground: Colors.black,
@@ -38,10 +38,10 @@ class CollegeERPApp extends StatelessWidget {
           bodyMedium: TextStyle(fontSize: 14, color: Colors.black54),
         ),
         buttonTheme: ButtonThemeData(
-          buttonColor: Color(0xFF00796B), // Button color (Teal)
+          buttonColor: Color(0xFF00796B),
           textTheme: ButtonTextTheme.primary,
         ),
-        cardTheme:CardThemeData(
+        cardTheme: CardThemeData(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -51,6 +51,7 @@ class CollegeERPApp extends StatelessWidget {
       home: HomePage(),
       routes: {
         '/admin_login': (context) => AdminLoginPage(),
+        '/faculty_login': (context) => FacultyLoginPage(),
         '/student_login': (context) => const StudentLoginPage(),
         '/student_dashboard': (context) => StudentDashboard(
               student: ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>,
@@ -58,6 +59,9 @@ class CollegeERPApp extends StatelessWidget {
         '/student_profile': (context) => StudentProfile(
               student: ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>,
             ),
+      },
+      onUnknownRoute: (settings) {
+        return MaterialPageRoute(builder: (context) => HomePage());
       },
     );
   }
@@ -76,11 +80,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     "🏆 Sports Week from April 10-15!",
   ];
 
-  // Change the type of _listKey to GlobalKey<AnimatedListState>
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   List<String> displayedEvents = [];
 
-  // Sample images for the photo gallery
   final List<String> galleryImages = [
     'assets/image1.jpeg',
     'assets/image2.jpeg',
@@ -100,7 +102,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       await Future.delayed(Duration(milliseconds: 400));
       if (mounted) {
         displayedEvents.add(events[i]);
-        // Now this will work because _listKey is of the correct type
         _listKey.currentState?.insertItem(displayedEvents.length - 1);
       }
     }
@@ -111,24 +112,24 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(56), // Height for the AppBar
+        preferredSize: Size.fromHeight(56),
         child: AppBar(
-          backgroundColor: Theme.of(context).primaryColor, // Dark teal
+          backgroundColor: Theme.of(context).primaryColor,
           elevation: 4,
           titleSpacing: 0,
           title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween, // Distribute space evenly
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Padding(
-                padding: const EdgeInsets.only(left: 20.0), // Adjusted left padding
+                padding: const EdgeInsets.only(left: 20.0),
                 child: Row(
                   children: [
                     Container(
-                      color: Colors.black, // Logo background color
+                      color: Colors.black,
                       child: Image.asset(
                         'assets/logo.jpg',
-                        height: 70, // Logo height
-                        fit: BoxFit.contain, // Adjusted fit property
+                        height: 70,
+                        fit: BoxFit.contain,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
                             height: 70,
@@ -145,12 +146,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         },
                       ),
                     ),
-                    SizedBox(width: 10), // Space between logo and DTE code
+                    SizedBox(width: 10),
                     Text(
                       "DTE Code: EN6732",
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.white, // DTE code color
+                        color: Colors.white,
                       ),
                     ),
                   ],
@@ -180,9 +181,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         child: Column(
           children: [
             _buildEventSection(),
-            _buildPhotoGallery(), // Add photo gallery here
-            _buildDepartmentsSection(), // Add departments section here
-            _buildSocialMediaLinks(), // Add social media links here
+            _buildPhotoGallery(),
+            _buildDepartmentsSection(),
+            _buildSocialMediaLinks(),
           ],
         ),
       ),
@@ -203,7 +204,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ),
           ),
           SizedBox(height: 8),
-          // Use a Column to display the events
           AnimatedList(
             key: _listKey,
             shrinkWrap: true,
@@ -249,86 +249,86 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Widget _buildPhotoGallery() {
-  return Padding(
-    padding: const EdgeInsets.all(16.0),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "📸 Photo Gallery",
-          style: Theme.of(context).textTheme.displayLarge,
-        ),
-        SizedBox(height: 8),
-        Container(
-          height: 200, // Keep the container height as is
-          child: Swiper(
-            itemBuilder: (BuildContext context, int index) {
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(8), // Optional: Add rounded corners
-                child: Image.asset(
-                  galleryImages[index],
-                  fit: BoxFit.cover, // Ensure the image covers the container
-                ),
-              );
-            },
-            itemCount: galleryImages.length,
-            pagination: SwiperPagination(),
-            control: SwiperControl(),
-            autoplay: true,
-            viewportFraction: 0.25, // Show 4 items at a time (1/4 of the screen)
-            scale: 0.9, // Optional: Scale down the images slightly for better visual effect
-          ),
-        ),
-      ],
-    ),
-  );
-}
-  Widget _buildDepartmentsSection() {
-  return Padding(
-    padding: const EdgeInsets.all(16.0),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "🏫 Engineering Departments",
-          style: Theme.of(context).textTheme.displayLarge,
-        ),
-        SizedBox(height: 8),
-        // Use a ListView to display departments
-        ListView(
-          shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
-          children: [
-            _departmentCard("Computer Science Engineering", Icons.computer),
-            _departmentCard("Mechanical Engineering", Icons.build),
-            _departmentCard("Civil Engineering", Icons.apartment),
-            _departmentCard("Electrical Engineering", Icons.electrical_services),
-            _departmentCard("Electronics and Communication Engineering", Icons.radio),
-          ],
-        ),
-      ],
-    ),
-  );
-}
-
-  Widget _departmentCard(String departmentName, IconData icon) {
-  return Card(
-    margin: EdgeInsets.symmetric(vertical: 5),
-    child: Padding(
-      padding: EdgeInsets.all(16.0),
-      child: Row(
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 40, color: Theme.of(context).primaryColor), // Use the icon here
-          SizedBox(width: 12),
           Text(
-            departmentName,
-            style: Theme.of(context).textTheme.bodyLarge,
+            "📸 Photo Gallery",
+            style: Theme.of(context).textTheme.displayLarge,
+          ),
+          SizedBox(height: 8),
+          Container(
+            height: 200,
+            child: Swiper(
+              itemBuilder: (BuildContext context, int index) {
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.asset(
+                    galleryImages[index],
+                    fit: BoxFit.cover,
+                  ),
+                );
+              },
+              itemCount: galleryImages.length,
+              pagination: SwiperPagination(),
+              control: SwiperControl(),
+              autoplay: true,
+              viewportFraction: 0.25,
+              scale: 0.9,
+            ),
           ),
         ],
       ),
-    ),
-  );
-}
+    );
+  }
+
+  Widget _buildDepartmentsSection() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "🏫 Engineering Departments",
+            style: Theme.of(context).textTheme.displayLarge,
+          ),
+          SizedBox(height: 8),
+          ListView(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            children: [
+              _departmentCard("Computer Science Engineering", Icons.computer),
+              _departmentCard("Mechanical Engineering", Icons.build),
+              _departmentCard("Civil Engineering", Icons.apartment),
+              _departmentCard("Electrical Engineering", Icons.electrical_services),
+              _departmentCard("Electronics and Communication Engineering", Icons.radio),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _departmentCard(String departmentName, IconData icon) {
+    return Card(
+      margin: EdgeInsets.symmetric(vertical: 5),
+      child: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            Icon(icon, size: 40, color: Theme.of(context).primaryColor),
+            SizedBox(width: 12),
+            Text(
+              departmentName,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _navButton(BuildContext context, String text, VoidCallback onPressed) {
     return Padding(
@@ -379,13 +379,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               MaterialPageRoute(builder: (context) => AdminLoginPage()),
             );
             break;
-          // Handle other logins
           case "FacultyLogin":
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => FacultyLoginPage()),
-          );
-          break;
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => FacultyLoginPage()),
+            );
+            break;
           case "StudentLogin":
             Navigator.push(
               context,
@@ -397,7 +396,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  // Build social media links
   Widget _buildSocialMediaLinks() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -430,10 +428,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  // Function to launch URL
   void _launchURL(String url) async {
-    if (await canLaunch(url)) {
-      await launch(url);
+    final Uri uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
     } else {
       throw 'Could not launch $url';
     }

@@ -93,177 +93,195 @@ class _StudentLoginPageState extends State<StudentLoginPage> {
     }
   }
 
+  // Navigate to root route (/) when back button is pressed
+  Future<bool> _onBackPressed() async {
+    Navigator.pushReplacementNamed(context, '/');
+    return false; // Prevent default back behavior
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.blue, Colors.blueAccent],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    return WillPopScope(
+      onWillPop: _onBackPressed,
+      child: Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.blue, Colors.blueAccent],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-              child: Card(
-                elevation: 8,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.school,
-                          size: 60,
-                          color: Colors.blue,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          "Student Portal",
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue,
+          child: SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                child: Card(
+                  elevation: 8,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.arrow_back, color: Colors.blue),
+                                onPressed: _onBackPressed,
                               ),
-                        ),
-                        const SizedBox(height: 24),
-                        TextFormField(
-                          controller: _studentIdController,
-                          decoration: InputDecoration(
-                            labelText: "Student ID",
-                            prefixIcon: const Icon(Icons.badge),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey[200],
+                            ],
                           ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return "Please enter your Student ID";
-                            }
-                            return null;
-                          },
-                          keyboardType: TextInputType.text,
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _emailController,
-                          decoration: InputDecoration(
-                            labelText: "Email",
-                            prefixIcon: const Icon(Icons.email),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey[200],
+                          const Icon(
+                            Icons.school,
+                            size: 60,
+                            color: Colors.blue,
                           ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return "Please enter your email";
-                            }
-                            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                              return "Please enter a valid email";
-                            }
-                            return null;
-                          },
-                          keyboardType: TextInputType.emailAddress,
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _passwordController,
-                          decoration: InputDecoration(
-                            labelText: "Password (Your Student ID)",
-                            prefixIcon: const Icon(Icons.lock),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey[200],
-                          ),
-                          obscureText: _obscurePassword,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return "Please enter your password";
-                            }
-                            if (value != _studentIdController.text.trim()) {
-                              return "Password must match your Student ID";
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        if (_isLoading) const CircularProgressIndicator(),
-                        if (_errorMessage != null) ...[
                           const SizedBox(height: 16),
                           Text(
-                            _errorMessage!,
-                            style: const TextStyle(color: Colors.red),
-                          ),
-                        ],
-                        const SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: _isLoading ? null : _login,
-                          style: ElevatedButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 4,
-                          ),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Colors.blue, Colors.blueAccent],
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Center(
-                              child: Text(
-                                "Sign In",
-                                style: TextStyle(
-                                  fontSize: 18,
+                            "Student Portal",
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                                  color: Colors.blue,
+                                ),
+                          ),
+                          const SizedBox(height: 24),
+                          TextFormField(
+                            controller: _studentIdController,
+                            decoration: InputDecoration(
+                              labelText: "Student ID",
+                              prefixIcon: const Icon(Icons.badge),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey[200],
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return "Please enter your Student ID";
+                              }
+                              return null;
+                            },
+                            keyboardType: TextInputType.text,
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _emailController,
+                            decoration: InputDecoration(
+                              labelText: "Email",
+                              prefixIcon: const Icon(Icons.email),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey[200],
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return "Please enter your email";
+                              }
+                              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                                return "Please enter a valid email";
+                              }
+                              return null;
+                            },
+                            keyboardType: TextInputType.emailAddress,
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _passwordController,
+                            decoration: InputDecoration(
+                              labelText: "Password (Your Student ID)",
+                              prefixIcon: const Icon(Icons.lock),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
+                                },
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey[200],
+                            ),
+                            obscureText: _obscurePassword,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return "Please enter your password";
+                              }
+                              if (value != _studentIdController.text.trim()) {
+                                return "Password must match your Student ID";
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          if (_isLoading) const CircularProgressIndicator(),
+                          if (_errorMessage != null) ...[
+                            const SizedBox(height: 16),
+                            Text(
+                              _errorMessage!,
+                              style: const TextStyle(color: Colors.red),
+                            ),
+                          ],
+                          const SizedBox(height: 24),
+                          ElevatedButton(
+                            onPressed: _isLoading ? null : _login,
+                            style: ElevatedButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 4,
+                            ),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Colors.blue, Colors.blueAccent],
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  "Sign In",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        TextButton(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Contact admin to reset password"),
-                              ),
-                            );
-                          },
-                          child: const Text(
-                            "Forgot Password?",
-                            style: TextStyle(color: Colors.blue),
+                          const SizedBox(height: 16),
+                          TextButton(
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Contact admin to reset password"),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              "Forgot Password?",
+                              style: TextStyle(color: Colors.blue),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
