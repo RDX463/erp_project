@@ -38,7 +38,7 @@ class CollegeERPApp extends StatelessWidget {
           buttonColor: Color(0xFF00796B), // Button color (Teal)
           textTheme: ButtonTextTheme.primary,
         ),
-        cardTheme: CardTheme(
+        cardTheme:CardThemeData(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
