@@ -238,26 +238,44 @@ async def get_student_data(student_id: str):
 
 @app.post("/pay_fees")
 async def pay_fees(fees_data: StudentFeesPayment):
-    student = await students_collection.find_one({"student_id": fees_data.student_id})
+    # Validate input
+    if not isinstance(fees_data.amount_paid, (int, float)) or fees_data.amount_paid <= 0:
+        raise HTTPException(status_code=400, detail="Payment amount must be a positive number")
+    if not fees_data.student_id:
+        raise HTTPException(status_code=400, detail="Student ID is required")
 
+    # Fetch student
+    student = await students_collection.find_one({"student_id": fees_data.student_id})
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
 
-    total_fees = 96000
-    scholarship_amount = 43000 if student.get("scholarship_eligible", False) else 0
+    # Determine total fees based on caste
+    caste = student.get("caste", "non-open").lower()
+    valid_castes = {"open", "obc", "sc", "st", "non-open"}
+    if caste not in valid_castes:
+        logging.warning(f"Invalid caste '{caste}' for student_id={fees_data.student_id}, defaulting to non-open")
+        caste = "non-open"
+    total_fees = 96000 if caste == "open" else 53000
+
+    # Calculate payable fees with scholarship
+    scholarship_eligible = student.get("scholarship_eligible", False)
+    scholarship_amount = 43000 if scholarship_eligible else 0
     payable_fees = total_fees - scholarship_amount
 
-    # Fetch existing payment details
+    # Fetch existing payment
     existing_payment = await payments_collection.find_one({"student_id": fees_data.student_id})
+    already_paid = existing_payment["amount_paid"] if existing_payment and isinstance(existing_payment.get("amount_paid"), (int, float)) else 0
 
     # Calculate amounts
-    already_paid = existing_payment["amount_paid"] if existing_payment else 0
     new_total_paid = already_paid + fees_data.amount_paid
     remaining_fees = max(0, payable_fees - new_total_paid)
 
-    # Ensure payment does not exceed payable fees
+    # Log overpayment if applicable
     if new_total_paid > payable_fees:
-        raise HTTPException(status_code=400, detail=f"Payment exceeds total fees. Remaining balance: ₹{payable_fees - already_paid}")
+        logging.warning(f"Overpayment detected: student_id={fees_data.student_id}, excess_amount=₹{new_total_paid - payable_fees}")
+
+    # Log values for debugging
+    logging.info(f"Student: {fees_data.student_id}, Caste: {caste}, Total Fees: ₹{total_fees}, Scholarship: ₹{scholarship_amount}, Payable: ₹{payable_fees}, Already Paid: ₹{already_paid}, Attempted Payment: ₹{fees_data.amount_paid}, New Total Paid: ₹{new_total_paid}")
 
     # Update or insert payment record
     if existing_payment:
@@ -277,13 +295,14 @@ async def pay_fees(fees_data: StudentFeesPayment):
             "last_payment_date": datetime.utcnow()
         })
 
-    logging.info(f"✅ Fees Paid: {fees_data.student_id} | Paid: ₹{fees_data.amount_paid} | Remaining: ₹{remaining_fees}")
+    logging.info(f"✅ Fees Paid: {fees_data.student_id} | Paid: ₹{fees_data.amount_paid} | Total Paid: ₹{new_total_paid} | Remaining: ₹{remaining_fees}")
 
     return {
         "status": "success",
         "message": f"Payment of ₹{fees_data.amount_paid} received.",
         "total_paid": new_total_paid,
-        "remaining_fees": remaining_fees
+        "remaining_fees": remaining_fees,
+        "excess_amount": max(0, new_total_paid - payable_fees)
     }
 
 # ✅ STUDENT: Fetch Payment Details API
