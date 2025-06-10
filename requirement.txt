@@ -9,3 +9,5 @@ google-cloud-dialogflow
 dotenv
 flask
 aiosmtplib
+transformers==4.45.2
+torch==2.4.1

@@ -15,6 +15,7 @@ import 'student/student_login.dart';
 import 'student/student_dashboard.dart';
 import 'student/student_profile.dart';
 import 'student/document_upload.dart';
+import 'screens/feedback_screen.dart';
 
 void main() {
   runApp(const CollegeERPApp());
@@ -77,6 +78,7 @@ class CollegeERPApp extends StatelessWidget {
         '/document_upload': (context) => DocumentUpload(
               student: ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>,
             ),
+        '/feedback': (context) => const FeedbackScreen(),
       },
       onUnknownRoute: (settings) {
         return MaterialPageRoute(builder: (context) => const HomePage());
@@ -233,6 +235,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               return _buildAnimatedItem(displayedEvents[index], animation);
             },
           ),
+          const SizedBox(height: 16),
+        Center(
+          child: ElevatedButton(
+            onPressed: () {
+              Navigator.pushNamed(context, '/feedback');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+            child: const Text('Submit Feedback'),
+          ),
+        ),
         ],
       ),
     );
