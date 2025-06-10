@@ -7,6 +7,7 @@ import 'admin/admin_login.dart';
 import 'faculty/faculty_login.dart';
 import 'student/student_login.dart';
 import 'student/student_dashboard.dart';
+import 'student/student_profile.dart';
 
 void main() {
   runApp(CollegeERPApp());
@@ -51,9 +52,12 @@ class CollegeERPApp extends StatelessWidget {
       routes: {
         '/admin_login': (context) => AdminLoginPage(),
         '/student_login': (context) => const StudentLoginPage(),
-        '/student_dashboard': (context) {
-          final student = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
-          return StudentDashboard(student: student ?? {});}
+        '/student_dashboard': (context) => StudentDashboard(
+              student: ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>,
+            ),
+        '/student_profile': (context) => StudentProfile(
+              student: ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>,
+            ),
       },
     );
   }

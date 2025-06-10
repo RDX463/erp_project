@@ -24,61 +24,49 @@ class StudentDashboard extends StatelessWidget {
       appBar: AppBar(
         title: Text("Welcome, ${getStringValue(student['name'])}"),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: Center(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              'Student ID: ${getStringValue(student['student_id'])}',
-              style: const TextStyle(fontSize: 18),
+            const Text(
+              'Student Dashboard',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Name: ${getStringValue(student['name'])}',
-              style: const TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Email: ${getStringValue(student['email'])}',
-              style: const TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Department: ${getStringValue(student['department'])}',
-              style: const TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Address: ${getStringValue(student['address'])}',
-              style: const TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Father\'s Name: ${getStringValue(student['fathers name'])}',
-              style: const TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Mother\'s Name: ${getStringValue(student['mothers name'])}',
-              style: const TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '10th Marks: ${getStringValue(student['10th marks'])}',
-              style: const TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '12th Marks: ${getStringValue(student['12th marks'])}',
-              style: const TextStyle(fontSize: 18),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(
+                  context,
+                  '/student_profile',
+                  arguments: student,
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'View Profile',
+                style: TextStyle(fontSize: 18),
+              ),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
                 Navigator.pushReplacementNamed(context, '/student_login');
               },
-              child: const Text('Logout'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Logout',
+                style: TextStyle(fontSize: 18),
+              ),
             ),
           ],
         ),
