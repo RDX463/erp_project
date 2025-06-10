@@ -744,3 +744,37 @@ async def get_faculty():
 @app.get("/test")
 async def test_route():
     return {"status": "success", "message": "API is working!"}
+
+class StudentLogin(BaseModel):
+    student_id: str
+    password: str
+    email:str
+
+@app.post("/student_login")
+async def student_login(login: StudentLogin):
+    student1 = await admissions_collection.find_one({"studentId": login.student_id})
+    student = await students_collection.find_one({"email": login.email})
+    if not student1:
+        raise HTTPException(status_code=401, detail="Incorrect ID")
+    if login.password != login.student_id:
+        raise HTTPException(status_code=401, detail="Password must match Student ID")
+
+    # Helper function to convert lists to strings
+    def to_string(value):
+        if isinstance(value, list) and len(value) > 0:
+            return str(value[0])
+        return value if value is not None else "N/A"
+
+    return {
+        "student": {
+            "student_id": to_string(student1.get("studentId")),
+            "name": to_string(student1.get("name", "Unknown")),
+            "address": to_string(student1.get("address")),
+            "fathers name": to_string(student1.get("fatherName")),
+            "mothers name": to_string(student1.get("motherName")),
+            "10th marks": to_string(student1.get("marks10")),
+            "12th marks": to_string(student1.get("marks12")),
+            "email": to_string(student.get("email")),
+            "department": to_string(student.get("department")),
+        }
+    }

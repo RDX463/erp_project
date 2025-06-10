@@ -6,6 +6,7 @@ import 'package:flutter_swiper_view/flutter_swiper_view.dart'; // Import flutter
 import 'admin/admin_login.dart';
 import 'faculty/faculty_login.dart';
 import 'student/student_login.dart';
+import 'student/student_dashboard.dart';
 
 void main() {
   runApp(CollegeERPApp());
@@ -49,7 +50,10 @@ class CollegeERPApp extends StatelessWidget {
       home: HomePage(),
       routes: {
         '/admin_login': (context) => AdminLoginPage(),
-        // Add other routes here
+        '/student_login': (context) => const StudentLoginPage(),
+        '/student_dashboard': (context) {
+          final student = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+          return StudentDashboard(student: student ?? {});}
       },
     );
   }
