@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:url_launcher/url_launcher.dart' as launcher;
 
 class StudentPromotionPage extends StatefulWidget {
   const StudentPromotionPage({super.key});
@@ -10,39 +11,37 @@ class StudentPromotionPage extends StatefulWidget {
 }
 
 class _StudentPromotionPageState extends State<StudentPromotionPage> {
-  List<Map<String, dynamic>> students = [];
+  List<Map<String, dynamic>> pendingResults = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchStudentPromotionData();
+    _fetchPendingResults();
   }
 
-  // Fetch student details and result update status
-  Future<void> _fetchStudentPromotionData() async {
-    const url = 'http://localhost:5000/get_student_promotion';
+  // Fetch pending results for verification
+  Future<void> _fetchPendingResults() async {
+    const url = 'http://localhost:5000/get_pending_results';
 
     try {
       final response = await http.get(Uri.parse(url));
       print("Response Status: ${response.statusCode}");
       print("Raw Response Body: ${response.body}");
 
-      final jsonData = json.decode(response.body);
+      final jsonData = jsonDecode(response.body);
       print("Decoded JSON Data: $jsonData");
 
-      if (jsonData is Map && jsonData['status'] == 'success') {
-        final List<dynamic> studentList = jsonData['students'] ?? [];
+      if (jsonData['status'] == 'success') {
         setState(() {
-          students = studentList.map<Map<String, dynamic>>((student) {
+          pendingResults = List<Map<String, dynamic>>.from(jsonData['results']).map((result) {
             return {
-              "student_id": student["student_id"]?.toString() ?? "N/A",
-              "name": student["name"] ?? "Unknown",
-              "email": student["email"] ?? "No Email",
-              "department": student["department"] ?? "No Dept",
-              "year": student["year"] ?? "FE",
-              "result_updated": student["result_updated"] ?? false,
-              "result": student["result"] ?? "Not Available", // Add Result Field
+              "_id": result["_id"]?.toString() ?? "N/A",
+              "student_id": result["student_id"]?.toString() ?? "N/A",
+              "semester": result["semester"] ?? "Unknown",
+              "exam_type": result["exam_type"] ?? "Unknown",
+              "file_path": result["file_path"] ?? "",
+              "uploaded_at": result["uploaded_at"]?.split('T')[0] ?? "N/A",
             };
           }).toList();
           _isLoading = false;
@@ -55,28 +54,34 @@ class _StudentPromotionPageState extends State<StudentPromotionPage> {
       setState(() {
         _isLoading = false;
       });
-      _showErrorDialog("Error fetching data. Please check your connection.");
+      _showErrorDialog("Error fetching pending results. Please check your connection.");
     }
   }
 
-  // Send result update reminder email
-  Future<void> _sendResultReminder(String studentId) async {
-    const url = 'http://localhost:5000/send_result_reminder';
+  // Verify result
+  Future<void> _verifyResult(String resultId, String status, String comments) async {
+    const url = 'http://localhost:5000/verify_result';
 
     try {
       final response = await http.post(
         Uri.parse(url),
         headers: {"Content-Type": "application/json"},
-        body: json.encode({"student_id": studentId}),
+        body: jsonEncode({
+          "result_id": resultId,
+          "status": status,
+          "comments": comments,
+        }),
       );
+      print("Verify Response: ${response.body}");
 
       if (response.statusCode == 200) {
-        _showSuccessDialog("Reminder sent successfully!");
+        _showSuccessDialog("Result $status successfully!");
+        _fetchPendingResults();
       } else {
-        _showErrorDialog("Failed to send reminder.");
+        _showErrorDialog("Failed to verify result.");
       }
     } catch (e) {
-      _showErrorDialog("Error sending reminder.");
+      _showErrorDialog("Error verifying result: $e");
     }
   }
 
@@ -93,18 +98,75 @@ class _StudentPromotionPageState extends State<StudentPromotionPage> {
       final response = await http.post(
         Uri.parse(url),
         headers: {"Content-Type": "application/json"},
-        body: json.encode({"student_id": studentId, "new_year": newYear}),
+        body: jsonEncode({"student_id": studentId, "new_year": newYear}),
       );
+      print("Promote Response: ${response.body}");
 
       if (response.statusCode == 200) {
         _showSuccessDialog("Student promoted to $newYear successfully!");
-        _fetchStudentPromotionData(); // Refresh list
+        _fetchPendingResults();
       } else {
         _showErrorDialog("Failed to promote student.");
       }
     } catch (e) {
-      _showErrorDialog("Error promoting student.");
+      _showErrorDialog("Error promoting student: $e");
     }
+  }
+
+  // Show verification dialog
+  void _showVerificationDialog(Map<String, dynamic> result) {
+    final commentsController = TextEditingController();
+    String status = 'approved';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Verify Result: ${result['student_id']}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Semester: ${result['semester']}'),
+            Text('Exam Type: ${result['exam_type']}'),
+            TextButton(
+              onPressed: () async {
+                final url = 'http://localhost:5000/uploads/${result['file_path'].split('/').last}';
+                if (await launcher.canLaunchUrl(Uri.parse(url))) {
+                  await launcher.launchUrl(Uri.parse(url));
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cannot open file')));
+                }
+              },
+              child: const Text('View PDF'),
+            ),
+            DropdownButtonFormField<String>(
+              value: status,
+              items: ['approved', 'rejected']
+                  .map((s) => DropdownMenuItem(value: s, child: Text(s[0].toUpperCase() + s.substring(1))))
+                  .toList(),
+              onChanged: (value) => status = value!,
+              decoration: const InputDecoration(labelText: 'Status'),
+            ),
+            TextField(
+              controller: commentsController,
+              decoration: const InputDecoration(labelText: 'Comments'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              _verifyResult(result['_id'], status, commentsController.text);
+              Navigator.pop(context);
+            },
+            child: const Text('Submit'),
+          ),
+        ],
+      ),
+    );
   }
 
   // Show error dialog
@@ -134,7 +196,7 @@ class _StudentPromotionPageState extends State<StudentPromotionPage> {
         return AlertDialog(
           title: const Text("Success"),
           content: Text(message),
-          actions: <Widget>[
+          actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: const Text("OK", style: TextStyle(color: Colors.green)),
@@ -161,7 +223,7 @@ class _StudentPromotionPageState extends State<StudentPromotionPage> {
               child: Column(
                 children: [
                   const Text(
-                    "Student Promotion List",
+                    "Pending Result Verifications",
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 10),
@@ -172,30 +234,24 @@ class _StudentPromotionPageState extends State<StudentPromotionPage> {
                         columnSpacing: 16.0,
                         columns: const [
                           DataColumn(label: Text("Student ID")),
-                          DataColumn(label: Text("Name")),
-                          DataColumn(label: Text("Email")),
-                          DataColumn(label: Text("Department")),
-                          DataColumn(label: Text("Year")),
-                          DataColumn(label: Text("Result")),
-                          DataColumn(label: Text("Result Updated")),
+                          DataColumn(label: Text("Semester")),
+                          DataColumn(label: Text("Exam Type")),
+                          DataColumn(label: Text("Uploaded Date")),
+                          DataColumn(label: Text("Verify")),
                           DataColumn(label: Text("Promotion")),
-                          DataColumn(label: Text("Action")),
                         ],
-                        rows: students.map((student) {
-                          bool resultUpdated = student["result_updated"];
-                          String currentYear = student["year"].toString();
-
+                        rows: pendingResults.map((result) {
+                          String currentYear = "FE"; // Fetch dynamically if available
                           return DataRow(cells: [
-                            DataCell(Text(student["student_id"])),
-                            DataCell(Text(student["name"])),
-                            DataCell(Text(student["email"])),
-                            DataCell(Text(student["department"])),
-                            DataCell(Text(currentYear)),
-                            DataCell(Text(student["result"])), // Display result
+                            DataCell(Text(result["student_id"])),
+                            DataCell(Text(result["semester"])),
+                            DataCell(Text(result["exam_type"])),
+                            DataCell(Text(result["uploaded_at"])),
                             DataCell(
-                              Icon(
-                                resultUpdated ? Icons.check_circle : Icons.cancel,
-                                color: resultUpdated ? Colors.green : Colors.red,
+                              ElevatedButton(
+                                onPressed: () => _showVerificationDialog(result),
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                                child: const Text("Verify"),
                               ),
                             ),
                             DataCell(
@@ -206,23 +262,8 @@ class _StudentPromotionPageState extends State<StudentPromotionPage> {
                                           child: Text(year),
                                         ))
                                     .toList(),
-                                onChanged: resultUpdated
-                                    ? (newYear) => _promoteStudent(student["student_id"], newYear!, currentYear)
-                                    : null,
+                                onChanged: (newYear) => _promoteStudent(result["student_id"], newYear!, currentYear),
                                 hint: const Text("Select Year"),
-                                disabledHint: const Text("Update Result First"),
-                              ),
-                            ),
-                            DataCell(
-                              ElevatedButton(
-                                onPressed: resultUpdated
-                                    ? null
-                                    : () => _sendResultReminder(student["student_id"]),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      resultUpdated ? Colors.grey : Colors.blue,
-                                ),
-                                child: const Text("Notify"),
                               ),
                             ),
                           ]);

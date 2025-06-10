@@ -1,4 +1,4 @@
-import smtplib
+import aiosmtplib
 import json
 import re
 from email.mime.text import MIMEText
@@ -6,14 +6,17 @@ from email.mime.multipart import MIMEMultipart
 from fastapi import FastAPI, Request, HTTPException, File, UploadFile, Depends, Form
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pymongo import MongoClient
+from pydantic import BaseModel
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 import logging
 import os
 from datetime import datetime
 from typing import Dict, Any, Optional
-from pydantic import BaseModel
+from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo.errors import PyMongoError
+from bson.objectid import ObjectId
+import shutil
 
 # Initialize FastAPI
 app = FastAPI()
@@ -33,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 # MongoDB Connection
 try:
-    client = MongoClient('mongodb://localhost:27017')
+    client = AsyncIOMotorClient('mongodb://localhost:27017')
     db = client['studentERP']
     admins_collection = db['admins']
     admissions_collection = db['admissions']
@@ -42,6 +45,7 @@ try:
     queries_collection = db['document_queries']
     faculty_collection = db['faculty_db']
     documents_collection = db['documents']
+    results_collection = db['results']
     logger.info("✅ MongoDB connected successfully!")
 except Exception as e:
     logger.error(f"❌ MongoDB connection failed: {e}")
@@ -94,10 +98,6 @@ class ScholarshipNotify(BaseModel):
 class ResultReminder(BaseModel):
     student_id: str
 
-class PromoteStudent(BaseModel):
-    student_id: str
-    new_year: str
-
 class UpdateStudent(BaseModel):
     updated_data: Dict[str, Any]
     admin: str
@@ -137,11 +137,25 @@ class AdmissionForm(BaseModel):
     marks10: int
     marks12: int
 
+class ResultUpload(BaseModel):
+    student_id: str
+    semester: str
+    exam_type: str
+
+class ResultVerification(BaseModel):
+    result_id: str
+    status: str  # "approved" or "rejected"
+    comments: str = ""
+
+class StudentPromotion(BaseModel):
+    student_id: str
+    new_year: str  # e.g., "SE", "TE", "BE"
+
 # Helper Functions
 def allowed_file(filename: str) -> bool:
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def send_email(to_email: str, subject: str, message: str, name: str = "Student") -> bool:
+async def send_email(to_email: str, subject: str, message: str, name: str = "Student") -> bool:
     try:
         msg = MIMEMultipart()
         msg['From'] = SMTP_EMAIL
@@ -149,10 +163,15 @@ def send_email(to_email: str, subject: str, message: str, name: str = "Student")
         msg['Subject'] = subject
         body = f"Hello {name},\n\n{message}\n\nThank you."
         msg.attach(MIMEText(body, 'plain', 'utf-8'))
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-            server.starttls()
-            server.login(SMTP_EMAIL, SMTP_PASSWORD)
-            server.sendmail(SMTP_EMAIL, to_email, msg.as_string())
+        
+        await aiosmtplib.send(
+            msg,
+            hostname=SMTP_SERVER,
+            port=SMTP_PORT,
+            start_tls=True,
+            username=SMTP_EMAIL,
+            password=SMTP_PASSWORD
+        )
         logger.info(f"📧 Email sent to {to_email}")
         return True
     except Exception as e:
@@ -165,10 +184,10 @@ def hash_password(password: str) -> str:
 def verify_password(stored_password: str, provided_password: str) -> bool:
     return check_password_hash(stored_password, provided_password)
 
-def generate_student_id(department: str, division: str) -> tuple[str, int]:
+async def generate_student_id(department: str, division: str) -> tuple[str, int]:
     clg_code = "4088"
     today = datetime.now().strftime("%d%m%Y")
-    last_student = students_collection.find_one(
+    last_student = await students_collection.find_one(
         {"department": department, "division": division},
         sort=[("roll_no", -1)]
     )
@@ -183,20 +202,20 @@ async def admin_signup(data: AdminSignup):
     if data.password != data.confirm_password:
         raise HTTPException(status_code=400, detail="Passwords do not match")
 
-    existing_admin = admins_collection.find_one({"employee_id": data.employee_id})
+    existing_admin = await admins_collection.find_one({"employee_id": data.employee_id})
     if existing_admin:
         raise HTTPException(status_code=400, detail="Admin already exists")
 
     hashed_password = hash_password(data.password)
     new_admin = {"employee_id": data.employee_id, "password": hashed_password}
-    admins_collection.insert_one(new_admin)
+    await admins_collection.insert_one(new_admin)
 
     logger.info(f"✅ Admin Signed Up: {data.employee_id}")
     return {"status": "success", "message": "Admin signup successful"}
 
 @app.post("/admin_login")
 async def admin_login(data: AdminLogin):
-    existing_admin = admins_collection.find_one({"employee_id": data.employee_id})
+    existing_admin = await admins_collection.find_one({"employee_id": data.employee_id})
     if not existing_admin:
         raise HTTPException(status_code=400, detail="Admin not found")
 
@@ -212,7 +231,7 @@ async def admit_student(data: StudentAdmit):
     if not data.email or not re.match(r"[^@]+@[^@]+\.[^@]+", data.email):
         raise HTTPException(status_code=400, detail="Valid email address is required")
 
-    student_id, roll_no = generate_student_id(data.department, data.division)
+    student_id, roll_no = await generate_student_id(data.department, data.division)
     scholarship_eligible = data.category.lower() != "open"
     form_link = f"http://localhost:5500?student_id={student_id}"
 
@@ -231,9 +250,9 @@ async def admit_student(data: StudentAdmit):
         "roll_no": roll_no,
         "created_at": datetime.utcnow()
     }
-    students_collection.insert_one(new_student)
+    await students_collection.insert_one(new_student)
 
-    email_sent = send_email(data.email, "Complete Your Admission Form", f"Please complete your admission form: {form_link}")
+    email_sent = await send_email(data.email, "Complete Your Admission Form", f"Please complete your admission form: {form_link}")
     logger.info(f"✅ Student Admitted: ID={student_id}, Roll={roll_no}")
     return {
         "status": "success",
@@ -244,11 +263,11 @@ async def admit_student(data: StudentAdmit):
 
 @app.post("/student_submit_form")
 async def submit_student_form(data: StudentForm):
-    existing_student = students_collection.find_one({"student_id": data.student_id})
+    existing_student = await students_collection.find_one({"student_id": data.student_id})
     if not existing_student:
         raise HTTPException(status_code=404, detail="Student not found")
 
-    students_collection.update_one(
+    await students_collection.update_one(
         {"student_id": data.student_id},
         {"$set": {
             "address": data.address,
@@ -262,7 +281,7 @@ async def submit_student_form(data: StudentForm):
 
 @app.get("/get_student_data/{student_id}")
 async def get_student_data(student_id: str):
-    student = students_collection.find_one({"student_id": student_id}, {"_id": 0})
+    student = await students_collection.find_one({"student_id": student_id}, {"_id": 0})
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
     return {"status": "success", "student": student}
@@ -274,7 +293,7 @@ async def pay_fees(data: PayFees):
     if not data.student_id:
         raise HTTPException(status_code=400, detail="Student ID is required")
 
-    student = students_collection.find_one({"student_id": data.student_id})
+    student = await students_collection.find_one({"student_id": data.student_id})
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
 
@@ -284,7 +303,7 @@ async def pay_fees(data: PayFees):
     scholarship_amount = 43000 if scholarship_eligible else 0
     payable_fees = total_fees - scholarship_amount
 
-    existing_payment = payments_collection.find_one({"student_id": data.student_id})
+    existing_payment = await payments_collection.find_one({"student_id": data.student_id})
     already_paid = existing_payment["amount_paid"] if existing_payment else 0
     new_total_paid = already_paid + data.amount_paid
     remaining_fees = max(0, payable_fees - new_total_paid)
@@ -293,7 +312,7 @@ async def pay_fees(data: PayFees):
         logger.warning(f"Overpayment detected: student_id={data.student_id}, excess_amount=₹{new_total_paid - payable_fees}")
 
     if existing_payment:
-        payments_collection.update_one(
+        await payments_collection.update_one(
             {"student_id": data.student_id},
             {"$set": {
                 "amount_paid": new_total_paid,
@@ -303,7 +322,7 @@ async def pay_fees(data: PayFees):
             }}
         )
     else:
-        payments_collection.insert_one({
+        await payments_collection.insert_one({
             "student_id": data.student_id,
             "amount_paid": new_total_paid,
             "remaining_fees": remaining_fees,
@@ -322,20 +341,22 @@ async def pay_fees(data: PayFees):
 
 @app.get("/payment_details/{student_id}")
 async def get_payment_details(student_id: str):
-    payment = payments_collection.find_one({"student_id": student_id}, {"_id": 0})
+    payment = await payments_collection.find_one({"student_id": student_id}, {"_id": 0})
     if not payment:
         raise HTTPException(status_code=404, detail="No payment record found for this student.")
     return {"status": "success", "payment": payment}
 
 @app.get("/get_all_fees")
 async def get_all_fees():
-    students = list(students_collection.find({}, {"_id": 0, "student_id": 1, "scholarship_eligible": 1}))
+    students = []
+    async for student in students_collection.find({}, {"_id": 0, "student_id": 1, "scholarship_eligible": 1}):
+        students.append(student)
     fees_data = []
     for student in students:
         total_fees = 96000
         scholarship_amount = 43000 if student["scholarship_eligible"] else 0
         payable_fees = total_fees - scholarship_amount
-        payment = payments_collection.find_one({"student_id": student["student_id"]}, {"_id": 0})
+        payment = await payments_collection.find_one({"student_id": student["student_id"]}, {"_id": 0})
         amount_paid = payment["amount_paid"] if payment else 0
         remaining_fees = payable_fees - amount_paid
         fees_data.append({
@@ -348,24 +369,26 @@ async def get_all_fees():
 
 @app.post("/send_fee_reminder")
 async def send_fee_reminder(data: FeeReminder):
-    student = students_collection.find_one({"student_id": data.student_id}, {"_id": 0, "email": 1, "name": 1})
+    student = await students_collection.find_one({"student_id": data.student_id}, {"_id": 0, "email": 1, "name": 1})
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
 
-    email_sent = send_email(student["email"], "Reminder: Pending Fees Payment", "Please pay your pending fees.", student["name"])
+    email_sent = await send_email(student["email"], "Reminder: Pending Fees Payment", "Please pay your pending fees.", student["name"])
     if email_sent:
         return {"status": "success", "message": f"Fee reminder sent to {student['email']}"}
     raise HTTPException(status_code=500, detail="Failed to send email")
 
 @app.get("/get_scholarship_students")
 async def get_scholarship_students():
-    students = list(students_collection.find(
+    students = []
+    async for student in students_collection.find(
         {"category": {"$ne": "OPEN"}},
         {"_id": 0, "student_id": 1, "name": 1, "department": 1, "email": 1, "form_completed": 1, "year": 1}
-    ))
+    ):
+        students.append(student)
     for student in students:
-        payment = payments_collection.find_one({"student_id": student["student_id"]}, {"_id": 0})
-        admission = admissions_collection.find_one({"studentId": student["student_id"]}, {"_id": 0, "name": 1})
+        payment = await payments_collection.find_one({"student_id": student["student_id"]}, {"_id": 0})
+        admission = await admissions_collection.find_one({"studentId": student["student_id"]}, {"_id": 0, "name": 1})
         student["name"] = admission["name"] if admission and admission.get("name") else "Unknown"
         student["total_fees"] = 96000 - (43000 if student.get("scholarship_eligible", False) else 0)
         student["amount_paid"] = payment["amount_paid"] if payment else 0
@@ -374,13 +397,13 @@ async def get_scholarship_students():
 
 @app.post("/notify_scholarship_student")
 async def notify_scholarship_student(data: ScholarshipNotify):
-    student = students_collection.find_one({"student_id": data.student_id})
+    student = await students_collection.find_one({"student_id": data.student_id})
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
     if student.get("form_completed", False):
         return {"status": "info", "message": "Scholarship form already submitted"}
 
-    email_sent = send_email(
+    email_sent = await send_email(
         student["email"],
         "Reminder: Scholarship Form Submission",
         "Please submit your scholarship form as soon as possible.",
@@ -392,12 +415,14 @@ async def notify_scholarship_student(data: ScholarshipNotify):
 
 @app.get("/get_student_promotion")
 async def get_student_promotion():
-    students = list(students_collection.find({}, {"_id": 0, "student_id": 1, "name": 1, "email": 1, "year": 1, "result_updated": 1, "department": 1}))
+    students = []
+    async for student in students_collection.find({}, {"_id": 0, "student_id": 1, "name": 1, "email": 1, "year": 1, "result_updated": 1, "department": 1}):
+        students.append(student)
     return {"status": "success", "students": students}
 
 @app.post("/send_result_reminder")
 async def send_result_reminder(data: ResultReminder):
-    student = students_collection.find_one(
+    student = await students_collection.find_one(
         {"student_id": data.student_id},
         {"_id": 0, "email": 1, "name": 1, "result_updated": 1}
     )
@@ -407,7 +432,7 @@ async def send_result_reminder(data: ResultReminder):
     if student.get("result_updated", False):
         return {"status": "info", "message": "Result already updated"}
 
-    email_sent = send_email(
+    email_sent = await send_email(
         student["email"],
         "Result Update Reminder",
         f"Please update your result to be eligible for promotion.",
@@ -417,29 +442,13 @@ async def send_result_reminder(data: ResultReminder):
         return {"status": "success", "message": f"Result reminder sent to {student['email']}"}
     raise HTTPException(status_code=500, detail="Failed to send email")
 
-@app.post("/promote_student")
-async def promote_student(data: PromoteStudent):
-    student = students_collection.find_one({"student_id": data.student_id})
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
-
-    if not student.get("result_updated", False):
-        raise HTTPException(status_code=400, detail="Student result not updated, promotion not allowed")
-
-    students_collection.update_one(
-        {"student_id": data.student_id},
-        {"$set": {"year": data.new_year}}
-    )
-    logger.info(f"✅ Student {student.get('name', 'Unknown')} promoted to {data.new_year}")
-    return {"status": "success", "message": f"Student {student.get('name', 'Unknown')} promoted to {data.new_year}"}
-
 @app.post("/update_student")
 async def update_student(data: UpdateStudent):
     student_id = data.updated_data.get("student_id")
     if not student_id or not data.updated_data:
         raise HTTPException(status_code=400, detail="Missing student_id or updated_data")
 
-    student = students_collection.find_one({"student_id": student_id})
+    student = await students_collection.find_one({"student_id": student_id})
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
 
@@ -450,11 +459,11 @@ async def update_student(data: UpdateStudent):
             changes[key] = {"old": old_value, "new": new_value}
 
     if changes:
-        students_collection.update_one(
+        await students_collection.update_one(
             {"student_id": student_id},
             {"$set": data.updated_data}
         )
-        email_sent = send_email(
+        email_sent = await send_email(
             student["email"],
             "Student Profile Updated",
             f"Your profile has been updated:\n{json.dumps(changes, indent=2)}\nContact admin: {data.admin}",
@@ -490,9 +499,9 @@ async def upload_document(student_id: str = Form(...), file: UploadFile = File(.
         "verified": False,
         "uploaded_at": datetime.utcnow().isoformat()
     }
-    document_id = documents_collection.insert_one(document).inserted_id
+    document_id = (await documents_collection.insert_one(document)).inserted_id
 
-    students_collection.update_one(
+    await students_collection.update_one(
         {"student_id": student_id},
         {"$push": {
             "documents": {
@@ -507,7 +516,9 @@ async def upload_document(student_id: str = Form(...), file: UploadFile = File(.
 
 @app.get("/get_students")
 async def get_students():
-    students = list(students_collection.find({}, {"_id": 0}))
+    students = []
+    async for student in students_collection.find({}, {"_id": 0}):
+        students.append(student)
     return {"students": students}
 
 @app.patch("/verify_document")
@@ -515,13 +526,13 @@ async def verify_document(data: VerifyDocument):
     if not all([data.student_id, data.document_url, data.verified is not None]):
         raise HTTPException(status_code=400, detail="Missing required fields")
 
-    result = students_collection.update_one(
+    result = await students_collection.update_one(
         {"student_id": data.student_id, "documents.url": data.document_url},
         {"$set": {"documents.$.verified": data.verified}}
     )
 
     if result.modified_count > 0:
-        documents_collection.update_one(
+        await documents_collection.update_one(
             {"student_id": data.student_id, "url": data.document_url},
             {"$set": {"verified": data.verified}}
         )
@@ -540,11 +551,11 @@ async def send_document_query(data: DocumentQuery):
         "status": "Pending",
         "created_at": datetime.utcnow()
     }
-    queries_collection.insert_one(query_data)
+    await queries_collection.insert_one(query_data)
 
-    student = students_collection.find_one({"student_id": data.student_id})
+    student = await students_collection.find_one({"student_id": data.student_id})
     if student:
-        send_email(
+        await send_email(
             student["email"],
             "Document Query",
             f"A query has been raised regarding your document:\nType: {data.query_type}\nComment: {data.comment}",
@@ -573,9 +584,9 @@ async def add_faculty(data: FacultyData):
         "salary": data.salary,
         "password": data.password
     }
-    faculty_collection.insert_one(faculty_data)
+    await faculty_collection.insert_one(faculty_data)
 
-    email_sent = send_email(
+    email_sent = await send_email(
         faculty_data["email"],
         "Faculty Login Credentials",
         f"Employee ID: {faculty_data['employee_id']}\nPassword: {faculty_data['password']}",
@@ -587,14 +598,16 @@ async def add_faculty(data: FacultyData):
 
 @app.get("/get_faculty")
 async def get_faculty():
-    faculty_list = list(faculty_collection.find({}, {"_id": 0}))
+    faculty_list = []
+    async for faculty in faculty_collection.find({}, {"_id": 0}):
+        faculty_list.append(faculty)
     return {"faculty": faculty_list}
 
 # Student Login
 @app.post("/student_login")
 async def student_login(data: StudentLogin):
-    student1 = admissions_collection.find_one({"studentId": data.student_id})
-    student = students_collection.find_one({"email": data.email})
+    student1 = await admissions_collection.find_one({"studentId": data.student_id})
+    student = await students_collection.find_one({"email": data.email})
     if not student1:
         raise HTTPException(status_code=401, detail="Incorrect ID")
     if data.password != data.student_id:  # Simplified password check
@@ -622,11 +635,11 @@ async def student_login(data: StudentLogin):
 # Admission Form Routes
 @app.get("/validate_student_id/{student_id}")
 async def validate_student_id(student_id: str):
-    student_exists = students_collection.find_one({"student_id": student_id})
+    student_exists = await students_collection.find_one({"student_id": student_id})
     if not student_exists:
         return {"status": "error", "message": "❌ Invalid Student ID. Contact Main Control Center."}
 
-    admission = admissions_collection.find_one({"studentId": student_id}, {"_id": 0})
+    admission = await admissions_collection.find_one({"studentId": student_id}, {"_id": 0})
     if not admission:
         return {"status": "pending", "message": "⚠️ Student ID is valid, but admission form is not submitted yet."}
 
@@ -648,7 +661,7 @@ async def update_admission_form(data: AdmissionForm):
     if not data.studentId:
         raise HTTPException(status_code=400, detail="Student ID is missing")
 
-    result = admissions_collection.update_one(
+    result = await admissions_collection.update_one(
         {"studentId": data.studentId},
         {"$set": {
             "name": data.name,
@@ -665,8 +678,92 @@ async def update_admission_form(data: AdmissionForm):
         return {"status": "success", "message": "Admission form updated"}
     raise HTTPException(status_code=400, detail="No changes made or form not found")
 
+@app.post("/upload_result")
+async def upload_result(data: ResultUpload, file: UploadFile = File(...)):
+    if not file.filename.endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+
+    student = await students_collection.find_one({"student_id": data.student_id})
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    file_path = os.path.join(UPLOAD_FOLDER, f"{data.student_id}_{data.semester}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf")
+    with open(file_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    result_data = {
+        "student_id": data.student_id,
+        "semester": data.semester,
+        "exam_type": data.exam_type,
+        "file_path": file_path,
+        "status": "pending",
+        "uploaded_at": datetime.now(),
+        "verified_by": None,
+        "comments": ""
+    }
+    result = await results_collection.insert_one(result_data)
+    return {"status": "success", "message": "Result uploaded", "result_id": str(result.inserted_id)}
+
+@app.get("/get_pending_results")
+async def get_pending_results():
+    results = []
+    cursor = results_collection.find({"status": "pending"}, {"_id": 1, "student_id": 1, "semester": 1, "exam_type": 1, "file_path": 1, "uploaded_at": 1})
+    async for result in cursor:
+        result["_id"] = str(result["_id"])
+        results.append(result)
+    return {"status": "success", "results": results}
+
+@app.post("/verify_result")
+async def verify_result(data: ResultVerification):
+    try:
+        result = await results_collection.find_one({"_id": ObjectId(data.result_id)})
+        if not result:
+            raise HTTPException(status_code=404, detail="Result not found")
+
+        update_data = {
+            "status": data.status,
+            "comments": data.comments,
+            "verified_by": "Admin",  # Replace with actual admin ID
+            "verified_at": datetime.now()
+        }
+        await results_collection.update_one({"_id": ObjectId(data.result_id)}, {"$set": update_data})
+        return {"status": "success", "message": f"Result {data.status}"}
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid result ID format")
+
+@app.post("/promote_student")
+async def promote_student(data: StudentPromotion):
+    student = await students_collection.find_one({"student_id": data.student_id})
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    await results_collection.update_many(
+        {"student_id": data.student_id, "status": "pending"},
+        {"$set": {"status": "approved"}}
+    )
+    await students_collection.update_one(
+        {"student_id": data.student_id},
+        {"$set": {"year": data.new_year}}
+    )
+    return {"status": "success", "message": f"Student {data.student_id} promoted to {data.new_year}"}
+
+@app.get("/results/{student_id}")
+async def get_student_results(student_id: str):
+    try:
+        results = []
+        cursor = results_collection.find({"student_id": student_id}, {"_id": 1, "semester": 1, "exam_type": 1, "status": 1, "uploaded_at": 1})
+        async for result in cursor:
+            result["_id"] = str(result["_id"])
+            results.append(result)
+        if not results:
+            raise HTTPException(status_code=404, detail="No results found")
+        logger.info(f"Fetched {len(results)} results for student_id={student_id}")
+        return {"status": "success", "results": results}
+    except PyMongoError as e:
+        logger.error(f"MongoDB error fetching results: {e}")
+        raise HTTPException(status_code=500, detail="Database error")
+
 # Test Route
 @app.get("/test")
 async def test_route():
     return {"status": "success", "message": "API is working!"}
-

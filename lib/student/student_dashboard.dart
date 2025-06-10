@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'student_profile.dart';
 import 'document_upload.dart';
+import 'student_result_upload.dart'; // Add import
 
 class StudentDashboard extends StatelessWidget {
   final Map<String, dynamic> student;
@@ -68,6 +69,27 @@ class StudentDashboard extends StatelessWidget {
                       },
                       icon: const Icon(Icons.upload_file),
                       label: const Text('Upload Document'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => StudentResultUploadPage(
+                              studentId: student['student_id'].toString(),
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.upload),
+                      label: const Text('Upload Result'),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                         shape: RoundedRectangleBorder(
