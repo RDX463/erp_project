@@ -43,7 +43,7 @@ class CollegeERPApp extends StatelessWidget {
           onSurface: Colors.black,
         ),
         textTheme: const TextTheme(
-          displayLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
+          displayLarge: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black),
           bodyLarge: TextStyle(fontSize: 16, color: Colors.black87),
           bodyMedium: TextStyle(fontSize: 14, color: Colors.black54),
         ),
@@ -53,9 +53,9 @@ class CollegeERPApp extends StatelessWidget {
         ),
         cardTheme: CardThemeData(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
-          elevation: 4,
+          elevation: 6,
         ),
       ),
       home: const HomePage(),
@@ -121,7 +121,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   void _addEventsWithAnimation() async {
     for (int i = 0; i < events.length; i++) {
-      await Future.delayed(const Duration(milliseconds: 400));
+      await Future.delayed(const Duration(milliseconds: 300));
       if (mounted) {
         displayedEvents.add(events[i]);
         _listKey.currentState?.insertItem(displayedEvents.length - 1);
@@ -134,11 +134,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(56),
+        preferredSize: const Size.fromHeight(70),
         child: AppBar(
-          backgroundColor: Theme.of(context).primaryColor,
-          elevation: 4,
-          titleSpacing: 0,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Theme.of(context).primaryColor, Theme.of(context).secondaryHeaderColor],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
+          elevation: 8,
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -147,20 +154,23 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 child: Row(
                   children: [
                     Container(
-                      color: Colors.black,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
                       child: Image.asset(
                         'assets/logo.jpg',
-                        height: 70,
+                        height: 60,
                         fit: BoxFit.contain,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
-                            height: 70,
-                            width: 150,
+                            height: 60,
+                            width: 120,
                             color: Colors.red.shade100,
                             alignment: Alignment.center,
                             padding: const EdgeInsets.all(4),
                             child: Text(
-                              "Error\nLoading Logo\nCheck Console",
+                              "Error\nLoading Logo",
                               textAlign: TextAlign.center,
                               style: TextStyle(color: Colors.red.shade900, fontSize: 10),
                             ),
@@ -168,12 +178,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         },
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 12),
                     const Text(
                       "DTE Code: EN6732",
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 18,
                         color: Colors.white,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -181,7 +192,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
               const Spacer(),
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 5.0),
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: Row(
                   children: [
                     _navButton(context, "Home", () {}),
@@ -206,6 +217,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             _buildPhotoGallery(),
             _buildDepartmentsSection(),
             _buildSocialMediaLinks(),
+            _buildFooter(),
           ],
         ),
       ),
@@ -213,19 +225,38 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Widget _buildEventSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+      margin: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 8.0, bottom: 6.0),
-            child: Text(
-              "📢 Latest Notices & Events",
-              style: Theme.of(context).textTheme.displayLarge,
+            padding: const EdgeInsets.only(left: 8.0, bottom: 8.0),
+            child: Row(
+              children: [
+                Icon(Icons.event, color: Theme.of(context).primaryColor, size: 28),
+                const SizedBox(width: 8),
+                Text(
+                  "Latest Notices & Events",
+                  style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                        color: Theme.of(context).primaryColor,
+                      ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
           AnimatedList(
             key: _listKey,
             shrinkWrap: true,
@@ -236,19 +267,26 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             },
           ),
           const SizedBox(height: 16),
-        Center(
-          child: ElevatedButton(
-            onPressed: () {
-              Navigator.pushNamed(context, '/feedback');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          Center(
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/feedback');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 4,
+              ),
+              child: const Text(
+                'Submit Feedback',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
             ),
-            child: const Text('Submit Feedback'),
           ),
-        ),
         ],
       ),
     );
@@ -263,17 +301,29 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           end: Offset.zero,
         ).chain(CurveTween(curve: Curves.easeOutCubic))),
         child: Card(
-          margin: const EdgeInsets.symmetric(vertical: 7, horizontal: 5),
+          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Padding(
-            padding: const EdgeInsets.all(14.0),
+            padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
-                Icon(Icons.campaign_outlined, color: Theme.of(context).primaryColor, size: 22),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.campaign, color: Theme.of(context).primaryColor, size: 24),
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     event,
-                    style: Theme.of(context).textTheme.bodyLarge,
+                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
                   ),
                 ),
               ],
@@ -285,34 +335,70 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Widget _buildPhotoGallery() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "📸 Photo Gallery",
-            style: Theme.of(context).textTheme.displayLarge,
+          Padding(
+            padding: const EdgeInsets.only(left: 8.0, bottom: 8.0),
+            child: Row(
+              children: [
+                Icon(Icons.photo, color: Theme.of(context).primaryColor, size: 28),
+                const SizedBox(width: 8),
+                Text(
+                  "Photo Gallery",
+                  style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                        color: Theme.of(context).primaryColor,
+                      ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
           SizedBox(
-            height: 200,
+            height: 240,
             child: Swiper(
               itemBuilder: (BuildContext context, int index) {
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(
-                    galleryImages[index],
-                    fit: BoxFit.cover,
-                  ),
+                return Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.asset(
+                        galleryImages[index],
+                        fit: BoxFit.cover, // Changed to cover for zoom effect
+                        alignment: Alignment.center, // Center the image for zoom
+                        width: double.infinity,
+                        height: double.infinity,
+                      ),
+                    ),
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          gradient: LinearGradient(
+                            colors: [Colors.black.withOpacity(0.3), Colors.transparent],
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 );
               },
               itemCount: galleryImages.length,
-              pagination: const SwiperPagination(),
-              control: const SwiperControl(),
+              pagination: SwiperPagination(
+                builder: DotSwiperPaginationBuilder(
+                  activeColor: Theme.of(context).primaryColor,
+                  color: Colors.white,
+                ),
+              ),
+              control: SwiperControl(
+                color: Theme.of(context).primaryColor,
+              ),
               autoplay: true,
-              viewportFraction: 0.25,
-              scale: 0.9,
+              viewportFraction: 0.9, // Increased to make images appear larger
+              scale: 0.95, // Adjusted to reduce overlap and enhance zoom effect
             ),
           ),
         ],
@@ -321,25 +407,35 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Widget _buildDepartmentsSection() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "🏫 Engineering Departments",
-            style: Theme.of(context).textTheme.displayLarge,
+          Padding(
+            padding: const EdgeInsets.only(left: 8.0, bottom: 8.0),
+            child: Row(
+              children: [
+                Icon(Icons.school, color: Theme.of(context).primaryColor, size: 28),
+                const SizedBox(width: 8),
+                Text(
+                  "Engineering Departments",
+                  style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                        color: Theme.of(context).primaryColor,
+                      ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
           ListView(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             children: [
-              _departmentCard("Computer Science Engineering", Icons.computer),
-              _departmentCard("Mechanical Engineering", Icons.build),
-              _departmentCard("Civil Engineering", Icons.apartment),
-              _departmentCard("Electrical Engineering", Icons.electrical_services),
-              _departmentCard("Electronics and Communication Engineering", Icons.radio),
+              _departmentCard("Computer Science Engineering", Icons.computer, () {}),
+              _departmentCard("Mechanical Engineering", Icons.build, () {}),
+              _departmentCard("Civil Engineering", Icons.apartment, () {}),
+              _departmentCard("Electrical Engineering", Icons.electrical_services, () {}),
+              _departmentCard("Electronics and Communication Engineering", Icons.radio, () {}),
             ],
           ),
         ],
@@ -347,20 +443,36 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _departmentCard(String departmentName, IconData icon) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 5),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            Icon(icon, size: 40, color: Theme.of(context).primaryColor),
-            const SizedBox(width: 12),
-            Text(
-              departmentName,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-          ],
+  Widget _departmentCard(String departmentName, IconData icon, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 36, color: Theme.of(context).primaryColor),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  departmentName,
+                  style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios, size: 20, color: Theme.of(context).primaryColor),
+            ],
+          ),
         ),
       ),
     );
@@ -368,16 +480,24 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Widget _navButton(BuildContext context, String text, VoidCallback onPressed) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 10.0),
       child: TextButton(
         onPressed: onPressed,
         style: TextButton.styleFrom(
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          backgroundColor: Colors.white.withOpacity(0.1),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
         ),
         child: Text(
           text,
-          style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -386,26 +506,68 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Widget _loginMenu(BuildContext context) {
     return PopupMenuButton<String>(
       tooltip: "Login Options",
-      offset: const Offset(0, 45),
+      offset: const Offset(0, 50),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
-            Icon(Icons.login, color: Theme.of(context).primaryColor, size: 18),
-            const SizedBox(width: 5),
-            Text("Login", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor)),
-            const Icon(Icons.arrow_drop_down, color: Color(0xFF00796B), size: 20),
+            Icon(Icons.login, color: Theme.of(context).primaryColor, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              "Login",
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).primaryColor,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.arrow_drop_down, color: Theme.of(context).primaryColor, size: 24),
           ],
         ),
       ),
       itemBuilder: (context) => [
-        const PopupMenuItem(value: "StudentLogin", child: Text("Student Login")),
-        const PopupMenuItem(value: "FacultyLogin", child: Text("Faculty Login")),
-        const PopupMenuItem(value: "AdminLogin", child: Text("Admin Login")),
+        PopupMenuItem(
+          value: "StudentLogin",
+          child: Row(
+            children: [
+              Icon(Icons.person, color: Theme.of(context).primaryColor, size: 20),
+              const SizedBox(width: 8),
+              const Text("Student Login"),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: "FacultyLogin",
+          child: Row(
+            children: [
+              Icon(Icons.school, color: Theme.of(context).primaryColor, size: 20),
+              const SizedBox(width: 8),
+              const Text("Faculty Login"),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: "AdminLogin",
+          child: Row(
+            children: [
+              Icon(Icons.admin_panel_settings, color: Theme.of(context).primaryColor, size: 20),
+              const SizedBox(width: 8),
+              const Text("Admin Login"),
+            ],
+          ),
+        ),
       ],
       onSelected: (value) {
         switch (value) {
@@ -433,32 +595,117 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Widget _buildSocialMediaLinks() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
+    return Container(
+      padding: const EdgeInsets.all(20.0),
+      color: Theme.of(context).primaryColor.withOpacity(0.05),
       child: Column(
         children: [
+          Text(
+            "Connect With Us",
+            style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                  color: Theme.of(context).primaryColor,
+                  fontSize: 24,
+                ),
+          ),
+          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              IconButton(
-                icon: FaIcon(FontAwesomeIcons.facebook, color: Theme.of(context).primaryColor),
-                onPressed: () => _launchURL('https://www.facebook.com/'),
+              _socialButton(
+                context,
+                FaIcon(FontAwesomeIcons.facebook, color: Theme.of(context).primaryColor),
+                () => _launchURL('https://www.facebook.com/'),
               ),
-              IconButton(
-                icon: FaIcon(FontAwesomeIcons.twitter, color: Theme.of(context).primaryColor),
-                onPressed: () => _launchURL('https://twitter.com/'),
+              _socialButton(
+                context,
+                FaIcon(FontAwesomeIcons.twitter, color: Theme.of(context).primaryColor),
+                () => _launchURL('https://twitter.com/'),
               ),
-              IconButton(
-                icon: FaIcon(FontAwesomeIcons.linkedin, color: Theme.of(context).primaryColor),
-                onPressed: () => _launchURL('https://www.linkedin.com/'),
+              _socialButton(
+                context,
+                FaIcon(FontAwesomeIcons.linkedin, color: Theme.of(context).primaryColor),
+                () => _launchURL('https://www.linkedin.com/'),
               ),
-              IconButton(
-                icon: FaIcon(FontAwesomeIcons.youtube, color: Theme.of(context).primaryColor),
-                onPressed: () => _launchURL('https://www.youtube.com/'),
+              _socialButton(
+                context,
+                FaIcon(FontAwesomeIcons.youtube, color: Theme.of(context).primaryColor),
+                () => _launchURL('https://www.youtube.com/'),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+        ],
+      ),
+    );
+  }
+
+  Widget _socialButton(BuildContext context, FaIcon icon, VoidCallback onPressed) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: icon,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFooter() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+      color: Theme.of(context).primaryColor,
+      child: Column(
+        children: [
+          Text(
+            "College ERP System",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "© 2025 College Name. All rights reserved.",
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextButton(
+                onPressed: () {},
+                child: const Text(
+                  "Privacy Policy",
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+              ),
+              const SizedBox(width: 16),
+              TextButton(
+                onPressed: () {},
+                child: const Text(
+                  "Terms of Service",
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -469,7 +716,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
-      throw 'Could not launch $url';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not launch $url')),
+      );
     }
   }
 }
