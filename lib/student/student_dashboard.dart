@@ -113,6 +113,89 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       elevation: 2,
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AttendanceDetailPage(studentId: widget.student['student_id'].toString()),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.event_available),
+                    label: const Text('View Attendance'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).primaryColor,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            elevation: 8,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Overall Attendance',
+                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Attendance: 85%',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AttendanceDetailPage(studentId: widget.student['student_id'].toString()),
+                            ),
+                          );
+                        },
+                        child: const Text('View Details'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).primaryColor,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  LinearProgressIndicator(
+                    value: 0.85,
+                    backgroundColor: Colors.grey[200],
+                    valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+                    minHeight: 8,
+                  ),
                 ],
               ),
             ),
@@ -130,6 +213,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
       AssignmentCompletionPage(),
       NotificationBoxPage(),
       DocumentUpload(student: widget.student),
+      AttendanceDetailPage(studentId: widget.student['student_id'].toString()),
     ];
 
     return Scaffold(
@@ -327,6 +411,16 @@ class _StudentDashboardState extends State<StudentDashboard> {
               },
             ),
             ListTile(
+              leading: Icon(Icons.event_available, color: Theme.of(context).primaryColor),
+              title: const Text("Attendance"),
+              onTap: () {
+                setState(() {
+                  _selectedIndex = 5;
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
               leading: Icon(Icons.upload, color: Theme.of(context).primaryColor),
               title: const Text("Upload Result"),
               onTap: () {
@@ -414,6 +508,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
           BottomNavigationBarItem(
             icon: Icon(Icons.folder, size: 28),
             label: "Documents",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.event_available, size: 28),
+            label: "Attendance",
           ),
         ],
       ),
@@ -609,6 +707,87 @@ class NotificationBoxPage extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class AttendanceDetailPage extends StatelessWidget {
+  final String studentId;
+  final List<Map<String, dynamic>> attendanceRecords = [
+    {'date': '2025-06-01', 'course': 'DL', 'status': 'Present', 'time': '9:00 AM - 10:00 AM'},
+    {'date': '2025-06-01', 'course': 'ML', 'status': 'Absent', 'time': '10:15 AM - 11:15 AM'},
+    {'date': '2025-06-02', 'course': 'BT', 'status': 'Present', 'time': '9:00 AM - 10:00 AM'},
+    {'date': '2025-06-02', 'course': 'SDN', 'status': 'Present', 'time': '10:15 AM - 11:15 AM'},
+    {'date': '2025-06-03', 'course': 'BI', 'status': 'Present', 'time': '9:00 AM - 10:00 AM'},
+    {'date': '2025-06-04', 'course': 'HPC', 'status': 'Absent', 'time': '9:00 AM - 10:00 AM'},
+    {'date': '2025-06-05', 'course': 'DL', 'status': 'Present', 'time': '9:00 AM - 10:00 AM'},
+  ];
+
+  AttendanceDetailPage({required this.studentId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Attendance Details'),
+        backgroundColor: Theme.of(context).primaryColor,
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Attendance Records',
+                style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Detailed attendance history',
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 24),
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: attendanceRecords.map((record) {
+                      return ListTile(
+                        leading: Icon(
+                          record['status'] == 'Present' ? Icons.check_circle : Icons.cancel,
+                          color: record['status'] == 'Present' ? Colors.green : Colors.red,
+                        ),
+                        title: Text(
+                          '${record['course']}',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          '${record['date']} | ${record['time']}',
+                          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        ),
+                        trailing: Text(
+                          record['status'],
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: record['status'] == 'Present' ? Colors.green : Colors.red,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
