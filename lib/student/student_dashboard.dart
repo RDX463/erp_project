@@ -123,18 +123,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    // Initialize without building widgets that depend on Theme
-  }
-
-  @override
   Widget build(BuildContext context) {
-    // Define pages here to ensure Theme.of(context) is available
     final List<Widget> pages = [
       _buildDashboardContent(),
-      Container(), // Placeholder for Results page
-      Container(), // Placeholder for Documents page
+      TimetablePage(),
+      AssignmentCompletionPage(),
+      NotificationBoxPage(),
+      DocumentUpload(student: widget.student),
     ];
 
     return Scaffold(
@@ -292,15 +287,43 @@ class _StudentDashboardState extends State<StudentDashboard> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.upload_file, color: Theme.of(context).primaryColor),
-              title: const Text("Upload Document"),
+              leading: Icon(Icons.schedule, color: Theme.of(context).primaryColor),
+              title: const Text("Timetable"),
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DocumentUpload(student: widget.student),
-                  ),
-                );
+                setState(() {
+                  _selectedIndex = 1;
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.assignment, color: Theme.of(context).primaryColor),
+              title: const Text("Assignments"),
+              onTap: () {
+                setState(() {
+                  _selectedIndex = 2;
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.notifications, color: Theme.of(context).primaryColor),
+              title: const Text("Notifications"),
+              onTap: () {
+                setState(() {
+                  _selectedIndex = 3;
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.upload_file, color: Theme.of(context).primaryColor),
+              title: const Text("Documents"),
+              onTap: () {
+                setState(() {
+                  _selectedIndex = 4;
+                });
+                Navigator.pop(context);
               },
             ),
             ListTile(
@@ -371,20 +394,222 @@ class _StudentDashboardState extends State<StudentDashboard> {
             _selectedIndex = index;
           });
         },
-        items: [
+        items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard, size: 28),
             label: "Dashboard",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.description, size: 28),
-            label: "Results",
+            icon: Icon(Icons.schedule, size: 28),
+            label: "Timetable",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.assignment, size: 28),
+            label: "Assignments",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications, size: 28),
+            label: "Notifications",
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.folder, size: 28),
             label: "Documents",
           ),
         ],
+      ),
+    );
+  }
+}
+
+class TimetablePage extends StatelessWidget {
+  final List<Map<String, String>> timetable = [
+    {'day': 'Monday', 'time': '9:00 AM - 10:00 AM', 'course': 'DL', 'room': 'A-101'},
+    {'day': 'Monday', 'time': '10:15 AM - 11:15 AM', 'course': 'ML', 'room': 'B-202'},
+    {'day': 'Tuesday', 'time': '9:00 AM - 10:00 AM', 'course': 'BT', 'room': 'C-303'},
+    {'day': 'Tuesday', 'time': '10:15 AM - 11:15 AM', 'course': 'SDN', 'room': 'A-102'},
+    {'day': 'Wednesday', 'time': '9:00 AM - 10:00 AM', 'course': 'BI', 'room': 'A-101'},
+    {'day': 'Thursday', 'time': '9:00 AM - 10:00 AM', 'course': 'HPC', 'room': 'B-202'},
+    {'day': 'Friday', 'time': '9:00 AM - 10:00 AM', 'course': 'DL', 'room': 'C-303'},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Weekly Timetable',
+              style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your class schedule for the week',
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 24),
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: timetable.map((entry) {
+                    return ListTile(
+                      leading: Icon(Icons.schedule, color: Theme.of(context).primaryColor),
+                      title: Text(
+                        '${entry['course']}',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                        '${entry['day']} | ${entry['time']} | Room: ${entry['room']}',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class AssignmentCompletionPage extends StatelessWidget {
+  final List<Map<String, dynamic>> assignments = [
+    {'title': 'HPC Assignment 1', 'course': 'HPC', 'dueDate': '2025-06-15', 'completed': true},
+    {'title': 'DL Lab Report', 'course': 'DL', 'dueDate': '2025-06-20', 'completed': false},
+    {'title': 'Project Report', 'course': 'Project', 'dueDate': '2025-06-18', 'completed': true},
+    {'title': 'HPC Unit Test Prep', 'course': 'HPC', 'dueDate': '2025-06-22', 'completed': false},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Assignment Completion',
+              style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Track your assignment progress',
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 24),
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: assignments.map((assignment) {
+                    return ListTile(
+                      leading: Icon(
+                        assignment['completed'] ? Icons.check_circle : Icons.pending,
+                        color: assignment['completed'] ? Colors.green : Colors.orange,
+                      ),
+                      title: Text(
+                        assignment['title'],
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                        '${assignment['course']} | Due: ${assignment['dueDate']}',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      ),
+                      trailing: Text(
+                        assignment['completed'] ? 'Completed' : 'Pending',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: assignment['completed'] ? Colors.green : Colors.orange,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class NotificationBoxPage extends StatelessWidget {
+  final List<Map<String, String>> notifications = [
+    {'title': 'Exam Schedule Released', 'message': 'Mid-term exams start on June 25, 2025.', 'date': '2025-06-10'},
+    {'title': 'Assignment Reminder', 'message': 'Math Assignment 1 due on June 15, 2025.', 'date': '2025-06-08'},
+    {'title': 'Campus Event', 'message': 'Tech Fest on June 20, 2025. Register now!', 'date': '2025-06-07'},
+    {'title': 'Library Notice', 'message': 'Return overdue books by June 12, 2025.', 'date': '2025-06-06'},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Notifications',
+              style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Stay updated with recent alerts',
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 24),
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: notifications.map((notification) {
+                    return ListTile(
+                      leading: Icon(Icons.notifications, color: Theme.of(context).primaryColor),
+                      title: Text(
+                        notification['title']!,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                        notification['message']!,
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      ),
+                      trailing: Text(
+                        notification['date']!,
+                        style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
